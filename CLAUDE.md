@@ -762,11 +762,11 @@ Monthly estimate (1000 users, 100 files each):
 - [ ] Analytics dashboard
 - [ ] Auto-scaling configuration
 
-## Backend Architecture Guidelines (MVC Pattern)
+## Backend Architecture Guidelines
 
 ### Core Principles
 
-This project follows strict MVC (Model-View-Controller) separation with thin controllers. Every developer must adhere to these patterns to maintain code quality and consistency.
+This project follows strict architectural patterns and industry best practices. Every developer must adhere to these guidelines to maintain code quality, consistency, and scalability.
 
 ### 1. MVC Structure
 
@@ -1150,6 +1150,1731 @@ class Upload:
 - PRs violating these patterns will be rejected
 - Refactor existing code that doesn't follow these patterns
 - New features MUST follow this architecture from the start
+
+## API Versioning
+
+### URL Path Versioning Strategy
+
+This project uses URL path versioning for clear, explicit version management:
+
+```python
+# main.py
+from fastapi import FastAPI
+from api.v1 import router as v1_router
+from api.v2 import router as v2_router
+
+app = FastAPI(title="Multimodal Search API")
+
+# Mount versioned routers
+app.include_router(v1_router, prefix="/api/v1", tags=["v1"])
+app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
+```
+
+### Project Structure for Versioning
+
+```
+backend/
+├── api/
+│   ├── v1/
+│   │   ├── __init__.py
+│   │   ├── endpoints/
+│   │   │   ├── upload.py
+│   │   │   ├── search.py
+│   │   │   └── auth.py
+│   │   └── schemas/
+│   │       └── responses.py
+│   └── v2/
+│       ├── __init__.py
+│       ├── endpoints/
+│       └── schemas/
+```
+
+### Version Management Rules
+
+1. **Backward Compatibility**: v1 endpoints remain unchanged once released
+2. **Deprecation Policy**: 6-month deprecation notice before removing versions
+3. **Feature Flags**: Use feature flags for gradual rollout within versions
+4. **Documentation**: Each version has separate OpenAPI docs at `/api/v{n}/docs`
+
+## Consistent Response Envelope
+
+### Standard Response Format
+
+All API responses follow this consistent envelope pattern:
+
+```python
+# schemas/responses.py
+from typing import Optional, Any, List
+from pydantic import BaseModel
+from datetime import datetime
+
+class ResponseEnvelope(BaseModel):
+    """Standard API response envelope"""
+    status: str  # "success" or "error"
+    data: Optional[Any] = None
+    error: Optional[dict] = None
+    meta: Optional[dict] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+class SuccessResponse(ResponseEnvelope):
+    status: str = "success"
+    
+class ErrorResponse(ResponseEnvelope):
+    status: str = "error"
+    error: dict = Field(..., example={
+        "code": "VALIDATION_ERROR",
+        "message": "Invalid input data",
+        "details": [{"field": "email", "message": "Invalid email format"}]
+    })
+
+class PaginatedResponse(SuccessResponse):
+    data: List[Any]
+    meta: dict = Field(..., example={
+        "total": 100,
+        "limit": 20,
+        "offset": 0,
+        "has_more": True
+    })
+```
+
+### Usage Examples
+
+```python
+# Success response
+@router.get("/uploads", response_model=SuccessResponse)
+async def list_uploads(user: User = Depends(get_current_user)):
+    uploads = await Upload.find_by_user(user.id)
+    return SuccessResponse(
+        data=[upload.dict() for upload in uploads],
+        meta={"count": len(uploads)}
+    )
+
+# Error response
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=400,
+        content=ErrorResponse(
+            error={
+                "code": "VALIDATION_ERROR",
+                "message": str(exc),
+                "details": exc.errors()
+            }
+        ).dict()
+    )
+```
+
+## Automated Documentation
+
+### FastAPI with Pydantic Integration
+
+FastAPI automatically generates OpenAPI documentation. Enhance it with:
+
+```python
+# main.py
+from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
+
+app = FastAPI(
+    title="Multimodal Search API",
+    description="AI-powered multimodal file search system",
+    version="2.0.0",
+    terms_of_service="https://example.com/terms",
+    contact={
+        "name": "API Support",
+        "email": "api@example.com",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    }
+)
+
+# Custom OpenAPI schema
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Add security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+```
+
+### Documentation Enhancement
+
+```python
+# Enhanced endpoint documentation
+@router.post(
+    "/upload",
+    response_model=SuccessResponse,
+    summary="Upload a file for processing",
+    description="""
+    Upload a file to be processed by AI models.
+    
+    The file will be:
+    1. Validated for format and size
+    2. Uploaded to cloud storage
+    3. Queued for AI analysis
+    4. Made searchable after processing
+    """,
+    response_description="Upload job details",
+    responses={
+        200: {"description": "File uploaded successfully"},
+        400: {"description": "Invalid file format or size"},
+        401: {"description": "Authentication required"},
+        413: {"description": "File too large"},
+        429: {"description": "Rate limit exceeded"}
+    }
+)
+async def upload_file(
+    file: UploadFile = File(
+        ...,
+        description="File to upload (max 100MB)",
+        example="document.pdf"
+    ),
+    user: User = Depends(get_current_user)
+):
+    pass
+```
+
+### Client Code Generation
+
+```bash
+# Generate TypeScript client
+openapi-generator-cli generate \
+    -i http://localhost:8000/openapi.json \
+    -g typescript-axios \
+    -o ./generated/typescript-client
+
+# Generate Python client
+openapi-generator-cli generate \
+    -i http://localhost:8000/openapi.json \
+    -g python \
+    -o ./generated/python-client
+```
+
+## Configuration & Secrets Management
+
+### Pydantic Settings
+
+```python
+# config.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+from typing import Optional
+
+class Settings(BaseSettings):
+    """Application settings with validation"""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="forbid"  # Fail on unknown env vars
+    )
+    
+    # Application
+    app_name: str = "Multimodal Search API"
+    environment: str  # development, staging, production
+    debug: bool = False
+    
+    # Database
+    database_url: str
+    database_pool_size: int = 20
+    database_max_overflow: int = 40
+    
+    # Redis
+    redis_url: str
+    redis_max_connections: int = 50
+    
+    # External APIs
+    openai_api_key: str
+    gemini_api_key: str
+    
+    # Security
+    secret_key: str
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    
+    # Cloud Storage
+    gcs_bucket: str
+    gcs_project_id: Optional[str] = None
+    
+    # Feature Flags
+    enable_video_processing: bool = True
+    enable_rate_limiting: bool = True
+    
+    @validator('environment')
+    def validate_environment(cls, v):
+        allowed = ['development', 'staging', 'production']
+        if v not in allowed:
+            raise ValueError(f'environment must be one of {allowed}')
+        return v
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Cached settings instance"""
+    return Settings()
+
+# Usage
+settings = get_settings()
+```
+
+### Secrets Management Best Practices
+
+```python
+# secrets_manager.py
+import os
+from typing import Optional
+from google.cloud import secretmanager
+
+class SecretsManager:
+    """Manage secrets from various sources"""
+    
+    def __init__(self):
+        self.client = secretmanager.SecretManagerServiceClient()
+        self.project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    
+    def get_secret(self, key: str) -> Optional[str]:
+        """Get secret with fallback hierarchy"""
+        # 1. Try environment variable
+        value = os.getenv(key)
+        if value:
+            return value
+        
+        # 2. Try local .env file (development)
+        if os.getenv("ENVIRONMENT") == "development":
+            from dotenv import load_dotenv
+            load_dotenv()
+            value = os.getenv(key)
+            if value:
+                return value
+        
+        # 3. Try Google Secret Manager (production)
+        if self.project_id:
+            try:
+                name = f"projects/{self.project_id}/secrets/{key}/versions/latest"
+                response = self.client.access_secret_version(request={"name": name})
+                return response.payload.data.decode("UTF-8")
+            except Exception as e:
+                logger.error(f"Failed to get secret {key}: {e}")
+        
+        return None
+```
+
+## Database Migrations
+
+### Alembic Setup and Configuration
+
+```bash
+# Initialize Alembic
+alembic init migrations
+
+# Create initial migration
+alembic revision --autogenerate -m "Initial schema"
+
+# Apply migrations
+alembic upgrade head
+```
+
+### Alembic Configuration
+
+```python
+# alembic.ini
+[alembic]
+script_location = migrations
+prepend_sys_path = .
+version_path_separator = os
+sqlalchemy.url = postgresql://user:pass@localhost/dbname
+
+# migrations/env.py
+from logging.config import fileConfig
+from sqlalchemy import pool
+from alembic import context
+from app.database import Base
+from app.config import get_settings
+
+config = context.config
+settings = get_settings()
+
+# Override sqlalchemy.url with environment variable
+config.set_main_option("sqlalchemy.url", settings.database_url)
+
+target_metadata = Base.metadata
+
+def run_migrations_online():
+    """Run migrations in 'online' mode"""
+    configuration = config.get_section(config.config_ini_section)
+    configuration['sqlalchemy.url'] = settings.database_url
+    
+    connectable = engine_from_config(
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+```
+
+### Migration Best Practices
+
+```python
+# Example migration with rollback support
+"""Add user preferences table
+
+Revision ID: 3f146c5f8b24
+Revises: 2a3b4c5d6e7f
+Create Date: 2024-01-15 10:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+revision = '3f146c5f8b24'
+down_revision = '2a3b4c5d6e7f'
+
+def upgrade():
+    # Create table
+    op.create_table(
+        'user_preferences',
+        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('theme', sa.String(20), default='light'),
+        sa.Column('notifications_enabled', sa.Boolean, default=True),
+        sa.Column('created_at', sa.DateTime, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.DateTime, server_default=sa.func.now())
+    )
+    
+    # Create indexes
+    op.create_index('ix_user_preferences_user_id', 'user_preferences', ['user_id'])
+    
+    # Add foreign key
+    op.create_foreign_key(
+        'fk_user_preferences_user_id',
+        'user_preferences', 'users',
+        ['user_id'], ['id'],
+        ondelete='CASCADE'
+    )
+
+def downgrade():
+    op.drop_table('user_preferences')
+```
+
+## Testing Strategy
+
+### Test Structure and Organization
+
+```
+tests/
+├── unit/                 # Unit tests
+│   ├── models/
+│   ├── services/
+│   └── utils/
+├── integration/          # Integration tests
+│   ├── api/
+│   ├── database/
+│   └── external/
+├── contract/            # Contract tests
+│   └── openapi/
+├── e2e/                 # End-to-end tests
+├── fixtures/            # Test data
+├── conftest.py          # Shared fixtures
+└── factories.py         # Test data factories
+```
+
+### Unit Tests for Models and Services
+
+```python
+# tests/unit/models/test_upload_model.py
+import pytest
+from unittest.mock import Mock, patch
+from models.upload import Upload
+
+class TestUploadModel:
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database connection"""
+        with patch('models.upload.db') as mock:
+            yield mock
+    
+    @pytest.mark.asyncio
+    async def test_create_upload(self, mock_db):
+        """Test upload creation"""
+        # Arrange
+        mock_db.fetchrow.return_value = {
+            'id': 'test-id',
+            'filename': 'test.pdf',
+            'status': 'pending'
+        }
+        
+        # Act
+        upload = await Upload.create(
+            user_id='user-123',
+            filename='test.pdf',
+            file_size=1024
+        )
+        
+        # Assert
+        assert upload.id == 'test-id'
+        assert upload.filename == 'test.pdf'
+        mock_db.fetchrow.assert_called_once()
+```
+
+### Integration Tests for Controllers
+
+```python
+# tests/integration/api/test_upload_api.py
+import pytest
+from httpx import AsyncClient
+from fastapi import status
+
+class TestUploadAPI:
+    @pytest.mark.asyncio
+    async def test_upload_file_success(
+        self,
+        test_client: AsyncClient,
+        authenticated_user,
+        test_file
+    ):
+        """Test successful file upload"""
+        response = await test_client.post(
+            "/api/v1/upload",
+            files={"file": test_file},
+            headers=authenticated_user.headers
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "success"
+        assert "job_id" in data["data"]
+    
+    @pytest.mark.asyncio
+    async def test_upload_file_unauthenticated(
+        self,
+        test_client: AsyncClient,
+        test_file
+    ):
+        """Test upload without authentication"""
+        response = await test_client.post(
+            "/api/v1/upload",
+            files={"file": test_file}
+        )
+        
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+```
+
+### Contract Tests Against OpenAPI Spec
+
+```python
+# tests/contract/test_openapi_contract.py
+import pytest
+from openapi_spec_validator import validate_spec
+from openapi_schema_validator import validate
+import json
+
+class TestOpenAPIContract:
+    @pytest.fixture
+    def openapi_spec(self, test_client):
+        """Get OpenAPI specification"""
+        response = test_client.get("/openapi.json")
+        return response.json()
+    
+    def test_openapi_spec_valid(self, openapi_spec):
+        """Test OpenAPI spec is valid"""
+        validate_spec(openapi_spec)
+    
+    @pytest.mark.asyncio
+    async def test_response_matches_contract(
+        self,
+        test_client,
+        openapi_spec,
+        authenticated_user
+    ):
+        """Test actual responses match OpenAPI contract"""
+        # Make request
+        response = await test_client.get(
+            "/api/v1/uploads",
+            headers=authenticated_user.headers
+        )
+        
+        # Validate against schema
+        schema = openapi_spec["paths"]["/api/v1/uploads"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+        validate(response.json(), schema)
+```
+
+### Test Configuration
+
+```python
+# conftest.py
+import pytest
+import asyncio
+from typing import AsyncGenerator
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from app.main import app
+from app.database import Base
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create event loop for async tests"""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest.fixture(scope="function")
+async def test_db():
+    """Create test database"""
+    engine = create_async_engine("postgresql://test@localhost/test_db")
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with AsyncSession(engine) as session:
+        yield session
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+@pytest.fixture
+async def test_client() -> AsyncGenerator[AsyncClient, None]:
+    """Create test client"""
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+```
+
+## CI/CD & Containerization
+
+### Dockerfile
+
+```dockerfile
+# Multi-stage build for optimization
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Runtime stage
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run application
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### GitHub Actions CI Pipeline
+
+```yaml
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  POETRY_VERSION: "1.7.0"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          pip install ruff mypy
+      
+      - name: Run linting
+        run: |
+          ruff check .
+          mypy backend/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/test_db
+          REDIS_URL: redis://localhost:6379
+        run: |
+          poetry run pytest -v --cov=backend --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run security checks
+        run: |
+          pip install safety bandit
+          safety check
+          bandit -r backend/
+
+  build:
+    needs: [lint, test, security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: multimodal-search:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+### CD Pipeline for Production
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build and push image
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT }}/multimodal-search:${{ github.ref_name }} .
+          docker push gcr.io/${{ secrets.GCP_PROJECT }}/multimodal-search:${{ github.ref_name }}
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy multimodal-search \
+            --image gcr.io/${{ secrets.GCP_PROJECT }}/multimodal-search:${{ github.ref_name }} \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
+      
+      - name: Run smoke tests
+        run: |
+          SERVICE_URL=$(gcloud run services describe multimodal-search --platform managed --region us-central1 --format 'value(status.url)')
+          curl -f $SERVICE_URL/health || exit 1
+```
+
+## Security & Monitoring
+
+### Security Implementation
+
+```python
+# security/middleware.py
+from fastapi import Request, HTTPException
+from fastapi.security import HTTPBearer
+from starlette.middleware.base import BaseHTTPMiddleware
+import time
+import hashlib
+from collections import defaultdict
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    """Comprehensive security middleware"""
+    
+    def __init__(self, app, settings):
+        super().__init__(app)
+        self.settings = settings
+        self.rate_limiter = RateLimiter()
+    
+    async def dispatch(self, request: Request, call_next):
+        # 1. HTTPS enforcement
+        if self.settings.environment == "production":
+            if request.headers.get("X-Forwarded-Proto") != "https":
+                raise HTTPException(status_code=400, detail="HTTPS required")
+        
+        # 2. Security headers
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        
+        return response
+
+class RateLimiter:
+    """Token bucket rate limiter"""
+    
+    def __init__(self):
+        self.buckets = defaultdict(lambda: {"tokens": 100, "last_refill": time.time()})
+    
+    async def check_rate_limit(self, key: str, cost: int = 1) -> bool:
+        bucket = self.buckets[key]
+        now = time.time()
+        
+        # Refill tokens
+        time_passed = now - bucket["last_refill"]
+        bucket["tokens"] = min(100, bucket["tokens"] + time_passed * 10)  # 10 tokens/second
+        bucket["last_refill"] = now
+        
+        # Check if enough tokens
+        if bucket["tokens"] >= cost:
+            bucket["tokens"] -= cost
+            return True
+        
+        return False
+```
+
+### Input Validation
+
+```python
+# security/validators.py
+from pydantic import validator, constr, conint
+import re
+from typing import Any
+
+class SecureValidators:
+    """OWASP-compliant input validators"""
+    
+    @staticmethod
+    def sanitize_string(v: str) -> str:
+        """Remove potentially dangerous characters"""
+        # Remove null bytes
+        v = v.replace('\x00', '')
+        # Remove control characters
+        v = re.sub(r'[\x01-\x1F\x7F]', '', v)
+        return v.strip()
+    
+    @staticmethod
+    def validate_filename(filename: str) -> str:
+        """Validate and sanitize filename"""
+        # Remove path traversal attempts
+        filename = filename.replace('..', '').replace('/', '').replace('\\', '')
+        
+        # Whitelist allowed characters
+        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', filename):
+            raise ValueError("Invalid filename")
+        
+        # Check extension
+        allowed_extensions = {'.jpg', '.png', '.pdf', '.mp4', '.mp3', '.doc', '.docx'}
+        if not any(filename.lower().endswith(ext) for ext in allowed_extensions):
+            raise ValueError("File type not allowed")
+        
+        return filename
+
+# Usage in Pydantic models
+class SecureFileUpload(BaseModel):
+    filename: constr(min_length=1, max_length=255)
+    file_size: conint(gt=0, le=104857600)  # Max 100MB
+    
+    @validator('filename')
+    def validate_filename(cls, v):
+        return SecureValidators.validate_filename(v)
+```
+
+### Structured Logging with Correlation IDs
+
+```python
+# logging_config.py
+import logging
+import json
+from datetime import datetime
+from contextvars import ContextVar
+from pythonjsonlogger import jsonlogger
+
+# Context variable for correlation ID
+correlation_id: ContextVar[str] = ContextVar('correlation_id', default='')
+
+class CorrelationIdFilter(logging.Filter):
+    """Add correlation ID to log records"""
+    
+    def filter(self, record):
+        record.correlation_id = correlation_id.get()
+        return True
+
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    """Custom JSON formatter with additional fields"""
+    
+    def add_fields(self, log_record, record, message_dict):
+        super().add_fields(log_record, record, message_dict)
+        log_record['timestamp'] = datetime.utcnow().isoformat()
+        log_record['service'] = 'multimodal-search'
+        log_record['environment'] = settings.environment
+        log_record['correlation_id'] = getattr(record, 'correlation_id', '')
+
+# Configure logging
+def setup_logging():
+    handler = logging.StreamHandler()
+    handler.setFormatter(CustomJsonFormatter())
+    handler.addFilter(CorrelationIdFilter())
+    
+    logger = logging.getLogger()
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    
+    # Middleware to set correlation ID
+    @app.middleware("http")
+    async def correlation_id_middleware(request: Request, call_next):
+        request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
+        correlation_id.set(request_id)
+        
+        response = await call_next(request)
+        response.headers['X-Request-ID'] = request_id
+        
+        return response
+```
+
+### Error Tracking with Sentry
+
+```python
+# monitoring/sentry_config.py
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+
+def setup_sentry(settings):
+    """Configure Sentry error tracking"""
+    if settings.environment in ["staging", "production"]:
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.environment,
+            integrations=[
+                FastApiIntegration(transaction_style='endpoint'),
+                SqlalchemyIntegration(),
+                RedisIntegration(),
+            ],
+            traces_sample_rate=0.1,  # 10% of transactions
+            profiles_sample_rate=0.1,  # 10% profiling
+            before_send=before_send_filter,
+            attach_stacktrace=True,
+            send_default_pii=False,  # Don't send PII
+        )
+
+def before_send_filter(event, hint):
+    """Filter sensitive data before sending to Sentry"""
+    # Remove sensitive headers
+    if 'request' in event and 'headers' in event['request']:
+        sensitive_headers = ['authorization', 'x-api-key', 'cookie']
+        for header in sensitive_headers:
+            event['request']['headers'].pop(header, None)
+    
+    return event
+```
+
+### Monitoring Setup
+
+```python
+# monitoring/metrics.py
+from prometheus_client import Counter, Histogram, Gauge, Info
+from prometheus_client import generate_latest
+from fastapi import Response
+
+# Define metrics
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+active_uploads = Gauge(
+    'active_uploads',
+    'Number of active file uploads'
+)
+
+app_info = Info('app_info', 'Application information')
+app_info.info({
+    'version': settings.app_version,
+    'environment': settings.environment
+})
+
+# Metrics endpoint
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    return Response(content=generate_latest(), media_type="text/plain")
+
+# Middleware to collect metrics
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    duration = time.time() - start_time
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.url.path,
+        status=response.status_code
+    ).inc()
+    
+    http_request_duration.labels(
+        method=request.method,
+        endpoint=request.url.path
+    ).observe(duration)
+    
+    return response
+```
+
+## Performance & Scaling
+
+### Redis Caching Strategy
+
+```python
+# cache/redis_cache.py
+from typing import Optional, Any, Callable
+import redis.asyncio as redis
+import json
+import hashlib
+from functools import wraps
+
+class RedisCache:
+    """Redis caching with best practices"""
+    
+    def __init__(self, redis_url: str):
+        self.redis = redis.from_url(
+            redis_url,
+            encoding="utf-8",
+            decode_responses=True,
+            max_connections=50,
+            health_check_interval=30
+        )
+    
+    async def get_or_set(
+        self,
+        key: str,
+        factory: Callable,
+        ttl: int = 300,
+        namespace: str = "cache"
+    ) -> Any:
+        """Cache-aside pattern implementation"""
+        full_key = f"{namespace}:{key}"
+        
+        # Try to get from cache
+        cached = await self.redis.get(full_key)
+        if cached:
+            return json.loads(cached)
+        
+        # Generate value
+        value = await factory()
+        
+        # Store in cache with TTL
+        await self.redis.setex(
+            full_key,
+            ttl,
+            json.dumps(value, default=str)
+        )
+        
+        return value
+    
+    def cached(
+        self,
+        ttl: int = 300,
+        namespace: str = "cache",
+        key_builder: Optional[Callable] = None
+    ):
+        """Decorator for caching function results"""
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(*args, **kwargs):
+                # Build cache key
+                if key_builder:
+                    cache_key = key_builder(*args, **kwargs)
+                else:
+                    # Default key building
+                    key_parts = [func.__name__]
+                    key_parts.extend(str(arg) for arg in args)
+                    key_parts.extend(f"{k}:{v}" for k, v in sorted(kwargs.items()))
+                    cache_key = hashlib.md5(":".join(key_parts).encode()).hexdigest()
+                
+                return await self.get_or_set(
+                    cache_key,
+                    lambda: func(*args, **kwargs),
+                    ttl,
+                    namespace
+                )
+            
+            # Add cache management
+            wrapper.invalidate = lambda *args, **kwargs: self.invalidate(
+                namespace, key_builder(*args, **kwargs) if key_builder else None
+            )
+            
+            return wrapper
+        return decorator
+    
+    async def invalidate(self, namespace: str, key: Optional[str] = None):
+        """Invalidate cache entries"""
+        if key:
+            await self.redis.delete(f"{namespace}:{key}")
+        else:
+            # Invalidate entire namespace
+            async for key in self.redis.scan_iter(f"{namespace}:*"):
+                await self.redis.delete(key)
+
+# Usage
+cache = RedisCache(settings.redis_url)
+
+@cache.cached(ttl=600, namespace="search")
+async def search_files(query: str, user_id: str):
+    # Expensive search operation
+    results = await perform_search(query, user_id)
+    return results
+```
+
+### Pagination Implementation
+
+```python
+# utils/pagination.py
+from typing import Generic, TypeVar, List
+from pydantic import BaseModel, Field
+from fastapi import Query
+
+T = TypeVar('T')
+
+class PaginationParams(BaseModel):
+    """Pagination parameters"""
+    page: int = Field(1, ge=1, description="Page number")
+    size: int = Field(20, ge=1, le=100, description="Page size")
+    
+    @property
+    def offset(self) -> int:
+        return (self.page - 1) * self.size
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Paginated response wrapper"""
+    items: List[T]
+    total: int
+    page: int
+    size: int
+    pages: int
+    has_next: bool
+    has_prev: bool
+    
+    @classmethod
+    def create(
+        cls,
+        items: List[T],
+        total: int,
+        params: PaginationParams
+    ) -> 'PaginatedResponse[T]':
+        pages = (total + params.size - 1) // params.size
+        return cls(
+            items=items,
+            total=total,
+            page=params.page,
+            size=params.size,
+            pages=pages,
+            has_next=params.page < pages,
+            has_prev=params.page > 1
+        )
+
+# Usage in endpoint
+@router.get("/uploads", response_model=PaginatedResponse[UploadSchema])
+async def list_uploads(
+    pagination: PaginationParams = Depends(),
+    user: User = Depends(get_current_user)
+):
+    items = await Upload.find_by_user(
+        user.id,
+        limit=pagination.size,
+        offset=pagination.offset
+    )
+    total = await Upload.count_by_user(user.id)
+    
+    return PaginatedResponse.create(items, total, pagination)
+```
+
+### Rate Limiting
+
+```python
+# middleware/rate_limit.py
+from fastapi import Request, HTTPException
+from typing import Dict, Tuple
+import time
+import asyncio
+
+class RateLimitMiddleware:
+    """Token bucket rate limiting"""
+    
+    def __init__(
+        self,
+        rate: int = 100,  # requests per minute
+        burst: int = 20   # burst capacity
+    ):
+        self.rate = rate / 60  # Convert to per second
+        self.burst = burst
+        self.buckets: Dict[str, Tuple[float, float]] = {}
+        self.lock = asyncio.Lock()
+    
+    async def check_rate_limit(self, key: str) -> bool:
+        async with self.lock:
+            now = time.time()
+            
+            if key not in self.buckets:
+                self.buckets[key] = (self.burst, now)
+                return True
+            
+            tokens, last_update = self.buckets[key]
+            
+            # Calculate new tokens
+            elapsed = now - last_update
+            tokens = min(self.burst, tokens + elapsed * self.rate)
+            
+            if tokens < 1:
+                return False
+            
+            # Consume token
+            self.buckets[key] = (tokens - 1, now)
+            return True
+    
+    async def __call__(self, request: Request, call_next):
+        # Get rate limit key (IP or user ID)
+        key = request.client.host
+        if hasattr(request.state, "user"):
+            key = f"user:{request.state.user.id}"
+        
+        # Check rate limit
+        if not await self.check_rate_limit(key):
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded",
+                headers={"Retry-After": "60"}
+            )
+        
+        response = await call_next(request)
+        return response
+
+# Apply to specific routes
+from fastapi import APIRouter
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+
+@router.post("/upload")
+@limiter.limit("5/minute")
+async def upload_file(request: Request, file: UploadFile):
+    pass
+```
+
+### Nginx Configuration
+
+```nginx
+# nginx.conf
+upstream backend {
+    least_conn;
+    server backend1:8000 max_fails=3 fail_timeout=30s;
+    server backend2:8000 max_fails=3 fail_timeout=30s;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name api.example.com;
+    
+    # Redirect to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.example.com;
+    
+    # SSL configuration
+    ssl_certificate /etc/ssl/certs/cert.pem;
+    ssl_certificate_key /etc/ssl/private/key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    limit_req zone=api burst=20 nodelay;
+    
+    # Proxy settings
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        
+        # Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+        
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        
+        # Connection reuse
+        proxy_set_header Connection "";
+    }
+    
+    # Health check endpoint
+    location /health {
+        proxy_pass http://backend;
+        access_log off;
+    }
+    
+    # Static files with caching
+    location /static/ {
+        alias /var/www/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+## Additional Best Practices
+
+### Feature Flags
+
+```python
+# feature_flags.py
+from typing import Dict, Any
+from pydantic import BaseModel
+import httpx
+from functools import lru_cache
+
+class FeatureFlag(BaseModel):
+    """Feature flag configuration"""
+    name: str
+    enabled: bool
+    rollout_percentage: int = 100
+    user_whitelist: List[str] = []
+    metadata: Dict[str, Any] = {}
+
+class FeatureFlagService:
+    """Feature flag management"""
+    
+    def __init__(self, provider: str = "local"):
+        self.provider = provider
+        self._flags: Dict[str, FeatureFlag] = {}
+        self._load_flags()
+    
+    def _load_flags(self):
+        """Load feature flags from provider"""
+        if self.provider == "local":
+            # Load from configuration
+            self._flags = {
+                "new_upload_flow": FeatureFlag(
+                    name="new_upload_flow",
+                    enabled=True,
+                    rollout_percentage=50
+                ),
+                "video_processing_v2": FeatureFlag(
+                    name="video_processing_v2",
+                    enabled=False
+                )
+            }
+        elif self.provider == "launchdarkly":
+            # Load from LaunchDarkly
+            pass
+    
+    def is_enabled(
+        self,
+        flag_name: str,
+        user_id: Optional[str] = None
+    ) -> bool:
+        """Check if feature is enabled for user"""
+        flag = self._flags.get(flag_name)
+        if not flag or not flag.enabled:
+            return False
+        
+        # Check whitelist
+        if user_id and user_id in flag.user_whitelist:
+            return True
+        
+        # Check rollout percentage
+        if flag.rollout_percentage < 100:
+            # Simple hash-based rollout
+            user_hash = hash(user_id or "anonymous") % 100
+            return user_hash < flag.rollout_percentage
+        
+        return True
+
+# Usage
+feature_flags = FeatureFlagService()
+
+@router.post("/upload")
+async def upload_file(file: UploadFile, user: User = Depends(get_current_user)):
+    if feature_flags.is_enabled("new_upload_flow", user.id):
+        return await new_upload_handler(file, user)
+    else:
+        return await legacy_upload_handler(file, user)
+```
+
+### OAuth/OIDC Integration
+
+```python
+# auth/oauth.py
+from authlib.integrations.starlette_client import OAuth
+from fastapi import Request, HTTPException
+from jose import jwt, JWTError
+
+oauth = OAuth()
+
+# Configure OAuth providers
+oauth.register(
+    name='google',
+    client_id=settings.google_client_id,
+    client_secret=settings.google_client_secret,
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+oauth.register(
+    name='github',
+    client_id=settings.github_client_id,
+    client_secret=settings.github_client_secret,
+    authorize_url='https://github.com/login/oauth/authorize',
+    access_token_url='https://github.com/login/oauth/access_token',
+    client_kwargs={'scope': 'user:email'}
+)
+
+# OAuth endpoints
+@router.get("/auth/{provider}")
+async def oauth_login(provider: str, request: Request):
+    """Initiate OAuth flow"""
+    redirect_uri = request.url_for('oauth_callback', provider=provider)
+    return await oauth.create_client(provider).authorize_redirect(request, redirect_uri)
+
+@router.get("/auth/{provider}/callback")
+async def oauth_callback(provider: str, request: Request):
+    """Handle OAuth callback"""
+    client = oauth.create_client(provider)
+    token = await client.authorize_access_token(request)
+    
+    # Get user info
+    user_info = token.get('userinfo')
+    if not user_info:
+        user_info = await client.userinfo(token=token)
+    
+    # Create or update user
+    user = await User.find_or_create_oauth(
+        provider=provider,
+        provider_id=user_info['sub'],
+        email=user_info['email'],
+        name=user_info.get('name')
+    )
+    
+    # Generate JWT
+    access_token = create_access_token(user.id)
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+```
+
+### Infrastructure as Code
+
+```hcl
+# terraform/main.tf
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+variable "project_id" {
+  description = "GCP Project ID"
+}
+
+variable "region" {
+  default = "us-central1"
+}
+
+# Cloud Run Service
+resource "google_cloud_run_service" "api" {
+  name     = "multimodal-search-api"
+  location = var.region
+  
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/multimodal-search:latest"
+        
+        resources {
+          limits = {
+            cpu    = "2"
+            memory = "4Gi"
+          }
+        }
+        
+        env {
+          name = "DATABASE_URL"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.db_url.secret_id
+              key  = "latest"
+            }
+          }
+        }
+      }
+      
+      service_account_name = google_service_account.api.email
+    }
+    
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/minScale"      = "1"
+        "autoscaling.knative.dev/maxScale"      = "100"
+        "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.main.connection_name
+      }
+    }
+  }
+}
+
+# Cloud SQL Instance
+resource "google_sql_database_instance" "main" {
+  name             = "multimodal-search-db"
+  database_version = "POSTGRES_16"
+  region           = var.region
+  
+  settings {
+    tier = "db-f1-micro"
+    
+    ip_configuration {
+      ipv4_enabled    = true
+      private_network = google_compute_network.vpc.id
+    }
+    
+    backup_configuration {
+      enabled                        = true
+      start_time                     = "03:00"
+      point_in_time_recovery_enabled = true
+    }
+    
+    database_flags {
+      name  = "max_connections"
+      value = "100"
+    }
+  }
+}
+
+# Redis Instance
+resource "google_redis_instance" "cache" {
+  name           = "multimodal-search-cache"
+  tier           = "BASIC"
+  memory_size_gb = 1
+  region         = var.region
+  
+  redis_configs = {
+    "maxmemory-policy" = "allkeys-lru"
+  }
+}
+
+# Load Balancer
+resource "google_compute_backend_service" "api" {
+  name        = "multimodal-search-backend"
+  port_name   = "http"
+  protocol    = "HTTP"
+  timeout_sec = 30
+  
+  backend {
+    group = google_compute_network_endpoint_group.api.id
+  }
+  
+  health_checks = [google_compute_health_check.api.id]
+  
+  cdn_policy {
+    cache_mode                   = "CACHE_ALL_STATIC"
+    default_ttl                  = 3600
+    client_ttl                   = 7200
+    max_ttl                      = 86400
+    negative_caching             = true
+    serve_while_stale            = 86400
+    signed_url_cache_max_age_sec = 7200
+  }
+}
+
+# Monitoring Dashboard
+resource "google_monitoring_dashboard" "api" {
+  dashboard_json = jsonencode({
+    displayName = "Multimodal Search API"
+    widgets = [
+      {
+        title = "Request Rate"
+        xyChart = {
+          dataSets = [{
+            timeSeriesQuery = {
+              timeSeriesFilter = {
+                filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\""
+              }
+            }
+          }]
+        }
+      }
+    ]
+  })
+}
+```
+
+## Summary
+
+This comprehensive backend architecture guide provides:
+
+1. **Clear MVC separation** with models handling all database operations
+2. **API versioning** using URL path strategy
+3. **Consistent response envelopes** for all API responses
+4. **Automated documentation** with FastAPI and OpenAPI
+5. **Robust configuration management** using Pydantic Settings
+6. **Database migrations** with Alembic
+7. **Comprehensive testing strategy** including unit, integration, and contract tests
+8. **CI/CD pipelines** with Docker and GitHub Actions
+9. **Security best practices** including HTTPS, input validation, and monitoring
+10. **Performance optimization** with Redis caching and proper scaling
+11. **Feature flags** for safe rollouts
+12. **OAuth/OIDC** integration examples
+13. **Infrastructure as Code** with Terraform
+
+These guidelines ensure a scalable, maintainable, and secure backend that can be easily understood and extended by any development team.
 
 ## Notes for Claude Code
 

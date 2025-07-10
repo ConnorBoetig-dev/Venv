@@ -4,23 +4,32 @@ This is the main context file for the Multimodal Search System project. It provi
 
 ## Quick Start
 
-1. **Local Development**:
+1. **Production Setup**:
    ```bash
    cd backend
    python -m venv venv
-   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+   source venv/bin/activate
    pip install -r requirements.txt
-   python -m uvicorn main:app --reload
+   
+   # Production server with Gunicorn
+   gunicorn main:app \
+       --workers 4 \
+       --worker-class uvicorn.workers.UvicornWorker \
+       --bind 0.0.0.0:8000 \
+       --timeout 300 \
+       --graceful-timeout 60 \
+       --access-logfile - \
+       --error-logfile - \
+       --preload
    ```
 
 2. **Database Setup**:
    ```bash
-   # Create database and extensions
-   psql -U postgres -c "CREATE DATABASE multimodal_search;"
-   psql -U postgres -d multimodal_search -f schema.sql
+   # Use Alembic migrations (never manual SQL in production)
+   alembic upgrade head
    ```
 
-3. **Environment Variables**: Copy `.env.example` to `.env` and fill in your API keys
+3. **Environment Variables**: Use Google Secret Manager or environment-specific configs (never .env files in production)
 
 ## Project Overview
 
@@ -32,50 +41,65 @@ A multimodal AI-powered search system that processes images, videos, audio files
 # Core Framework
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
+gunicorn==23.0.0
 python-multipart==0.0.12
 
 # Database
 asyncpg==0.30.0
 pgvector==0.3.6
 sqlalchemy==2.0.35
+alembic==1.13.3
 
 # AI/ML
 google-generativeai==0.8.3
 openai==1.54.0
 pillow==11.0.0
-opencv-python==4.10.0
+opencv-python-headless==4.10.0  # Headless for production
 
 # Cloud Services
 google-cloud-storage==2.18.2
+google-cloud-secret-manager==2.20.2
 firebase-admin==6.6.0
-redis==5.2.0
+redis[hiredis]==5.2.0  # With C speedups
 
-# Utilities
-python-dotenv==1.0.1
+# Production Utilities
 pydantic==2.9.2
 pydantic-settings==2.6.1
+prometheus-client==0.21.0
+sentry-sdk[fastapi]==2.17.0
+python-json-logger==2.0.7
 
-# Development
-pytest==8.3.3
-pytest-asyncio==0.24.0
-ruff==0.8.0
-mypy==1.13.0
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+slowapi==0.1.9
+
+# Testing (separate requirements-test.txt in production)
+# pytest==8.3.3
+# pytest-asyncio==0.24.0
+# pytest-cov==5.0.0
+
+# Linting (CI/CD only, not in production image)
+# ruff==0.8.0
+# mypy==1.13.0
 ```
 
 ## Architecture Decisions (FINAL)
 
 ### Core Technology Stack
 ```yaml
-Backend: Python 3.11 + FastAPI
-Database: Cloud SQL PostgreSQL 16 + pgvector
-Cache/Queue: Redis (Cloud Run)
-Storage: Google Cloud Storage
+Backend: Python 3.11 + FastAPI + Gunicorn (ASGI)
+Database: Cloud SQL PostgreSQL 16 + pgvector + pgbouncer
+Cache/Queue: Redis (Cloud Memorystore)
+Storage: Google Cloud Storage with CDN
 AI Models: 
   - Gemini Pro 1.5 (multimodal analysis)
   - OpenAI text-embedding-3-small (1536 dimensions)
-Auth: Firebase JWT
-Frontend: Vanilla HTML/CSS/JS
-Infrastructure: Terraform + Cloud Run
+Auth: Firebase Auth (managed service)
+Frontend: CDN-hosted static files
+Infrastructure: Terraform + Cloud Run + Load Balancer
+Monitoring: Prometheus + Grafana + Sentry
+Secrets: Google Secret Manager
 ```
 
 ### Processing Strategy
@@ -97,58 +121,143 @@ Infrastructure: Terraform + Cloud Run
 @.claude/patterns.md
 @.claude/errors.md
 
-## Development Environment Setup
+## Production Environment Setup
 
 ### Prerequisites
-- Python 3.11+
-- PostgreSQL 16 with pgvector extension
-- Redis 7.0+
+- Docker 24.0+
+- Kubernetes 1.28+ or Cloud Run
+- Terraform 1.6+
 - Google Cloud SDK
-- Node.js 20+ (for frontend development)
+- Production SSL certificates
 
-### Initial Setup Steps
+### Infrastructure Provisioning
 
-1. **Clone Repository**:
+1. **Terraform Setup**:
    ```bash
-   git clone <repository-url>
-   cd multimodal-search
+   cd infrastructure
+   terraform init
+   terraform plan -var="project_id=$GCP_PROJECT_ID"
+   terraform apply -auto-approve
    ```
 
-2. **Backend Setup**:
+2. **Database Setup with Migrations**:
    ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt
+   # Never create database manually - use Terraform
+   # Migrations run automatically on deployment
+   kubectl apply -f k8s/migrations-job.yaml
    ```
 
-3. **Database Setup**:
+3. **Secrets Configuration**:
    ```bash
-   # Install pgvector extension
-   sudo apt-get install postgresql-16-pgvector
+   # Create secrets in Google Secret Manager
+   gcloud secrets create db-connection-string \
+     --data-file=- <<< "postgresql://user:pass@/dbname?host=/cloudsql/CONNECTION_NAME"
    
-   # Create database
-   createdb multimodal_search
+   gcloud secrets create redis-connection-string \
+     --data-file=- <<< "redis://10.0.0.3:6379/0"
    
-   # Run migrations
-   psql -d multimodal_search -f migrations/001_initial_schema.sql
+   gcloud secrets create openai-api-key \
+     --data-file=- <<< "$OPENAI_API_KEY"
    ```
 
-4. **Configure Environment**:
+4. **Deploy Application**:
    ```bash
-   cp .env.example .env
-   # Edit .env with your API keys and configuration
+   # Build and push Docker image
+   docker build -t gcr.io/$GCP_PROJECT_ID/multimodal-search:$VERSION .
+   docker push gcr.io/$GCP_PROJECT_ID/multimodal-search:$VERSION
+   
+   # Deploy to Cloud Run
+   gcloud run deploy multimodal-search \
+     --image gcr.io/$GCP_PROJECT_ID/multimodal-search:$VERSION \
+     --platform managed \
+     --region us-central1 \
+     --no-allow-unauthenticated \
+     --service-account multimodal-search@$GCP_PROJECT_ID.iam.gserviceaccount.com \
+     --set-secrets="DATABASE_URL=db-connection-string:latest,REDIS_URL=redis-connection-string:latest"
    ```
 
-5. **Verify Setup**:
+5. **Verify Deployment**:
    ```bash
-   # Run tests
-   pytest
+   # Health checks
+   curl https://api.yourdomain.com/health
    
-   # Start development server
-   python -m uvicorn main:app --reload --port 8000
+   # Check metrics
+   curl https://api.yourdomain.com/metrics
    ```
+
+## Production Database Configuration
+
+### Connection Pooling with PgBouncer
+
+```ini
+# pgbouncer.ini
+[databases]
+multimodal_search = host=10.0.0.5 port=5432 dbname=multimodal_search
+
+[pgbouncer]
+listen_port = 6432
+listen_addr = *
+auth_type = md5
+auth_file = /etc/pgbouncer/userlist.txt
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 25
+reserve_pool_size = 5
+reserve_pool_timeout = 3
+server_lifetime = 3600
+server_idle_timeout = 600
+log_connections = 1
+log_disconnections = 1
+log_pooler_errors = 1
+```
+
+### Application Database Configuration
+
+```python
+# database/connection.py
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.pool import NullPool
+import asyncpg
+
+class DatabaseManager:
+    """Production database connection management"""
+    
+    def __init__(self, database_url: str):
+        # Use pgbouncer connection
+        self.engine = create_async_engine(
+            database_url.replace("postgresql://", "postgresql+asyncpg://"),
+            poolclass=NullPool,  # Let pgbouncer handle pooling
+            connect_args={
+                "server_settings": {
+                    "application_name": "multimodal_search",
+                    "jit": "off"
+                },
+                "command_timeout": 60,
+                "prepared_statement_cache_size": 0,  # Disable with pgbouncer
+            }
+        )
+    
+    async def get_session(self) -> AsyncSession:
+        async with AsyncSession(self.engine, expire_on_commit=False) as session:
+            yield session
+```
+
+### Production Database Optimizations
+
+```sql
+-- Performance settings for Cloud SQL
+ALTER DATABASE multimodal_search SET shared_preload_libraries = 'pg_stat_statements,pgvector';
+ALTER DATABASE multimodal_search SET effective_cache_size = '3GB';
+ALTER DATABASE multimodal_search SET maintenance_work_mem = '256MB';
+ALTER DATABASE multimodal_search SET random_page_cost = 1.1;
+ALTER DATABASE multimodal_search SET effective_io_concurrency = 200;
+ALTER DATABASE multimodal_search SET max_parallel_workers_per_gather = 2;
+ALTER DATABASE multimodal_search SET max_parallel_workers = 8;
+ALTER DATABASE multimodal_search SET max_parallel_maintenance_workers = 2;
+
+-- pgvector optimizations
+ALTER DATABASE multimodal_search SET ivfflat.probes = 10;
+```
 
 ## Testing Strategy
 
@@ -1458,13 +1567,8 @@ class SecretsManager:
         if value:
             return value
         
-        # 2. Try local .env file (development)
-        if os.getenv("ENVIRONMENT") == "development":
-            from dotenv import load_dotenv
-            load_dotenv()
-            value = os.getenv(key)
-            if value:
-                return value
+        # 2. For local testing only - use docker-compose with env_file
+        # Never use .env files in production
         
         # 3. Try Google Secret Manager (production)
         if self.project_id:
@@ -1821,9 +1925,17 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run application
+# Run application with Gunicorn in production
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["gunicorn", "main:app", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--timeout", "300", \
+     "--graceful-timeout", "60", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--preload"]
 ```
 
 ### GitHub Actions CI Pipeline
@@ -2854,6 +2966,131 @@ resource "google_monitoring_dashboard" "api" {
     ]
   })
 }
+```
+
+## Production Authentication Architecture
+
+### Why Firebase Auth (Not Self-Managed JWT)
+
+**Production Requirements Met by Firebase**:
+1. **Security**: SOC 2, ISO 27001, GDPR compliant out-of-box
+2. **Scalability**: Handles millions of concurrent users
+3. **Availability**: 99.95% SLA
+4. **Features**: MFA, password policies, brute force protection built-in
+5. **Zero Maintenance**: No security patches, key rotation, or token management
+
+**What Self-Managed JWT Would Require**:
+- Key rotation infrastructure
+- Token revocation database
+- Refresh token management
+- Rate limiting on auth endpoints  
+- Security audit compliance
+- 24/7 monitoring for auth attacks
+
+### Production Auth Implementation
+
+```python
+# auth/firebase_auth.py
+from firebase_admin import auth, credentials
+from fastapi import Depends, HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# Initialize once at startup
+cred = credentials.Certificate({
+    "type": "service_account",
+    "project_id": os.getenv("GCP_PROJECT_ID"),
+    # ... loaded from Secret Manager
+})
+firebase_admin.initialize_app(cred)
+
+security = HTTPBearer()
+
+async def verify_token(
+    credentials: HTTPAuthorizationCredentials = Security(security)
+) -> dict:
+    """Production-grade token verification"""
+    try:
+        # Firebase handles all security concerns
+        decoded_token = auth.verify_id_token(
+            credentials.credentials,
+            check_revoked=True  # Important for production
+        )
+        return decoded_token
+    except auth.RevokedIdTokenError:
+        raise HTTPException(401, "Token has been revoked")
+    except auth.ExpiredIdTokenError:
+        raise HTTPException(401, "Token has expired")
+    except Exception:
+        raise HTTPException(401, "Invalid authentication credentials")
+
+async def get_current_user(
+    token: dict = Depends(verify_token)
+) -> User:
+    """Get user with production checks"""
+    # Get internal user record
+    user = await User.find_by_firebase_uid(token["uid"])
+    
+    if not user:
+        # Auto-create user on first login
+        user = await User.create(
+            firebase_uid=token["uid"],
+            email=token.get("email"),
+            email_verified=token.get("email_verified", False)
+        )
+    
+    # Production checks
+    if user.is_suspended:
+        raise HTTPException(403, "Account suspended")
+    
+    if not user.email_verified and settings.require_email_verification:
+        raise HTTPException(403, "Email verification required")
+    
+    # Update last activity
+    await user.update_last_activity()
+    
+    return user
+```
+
+## Production Server Architecture
+
+### Why Gunicorn + Uvicorn Workers
+
+**Production Requirements**:
+1. **Process Management**: Gunicorn provides robust process management
+2. **Worker Recycling**: Prevents memory leaks with max_requests
+3. **Graceful Reloads**: Zero-downtime deployments
+4. **Performance**: Uvicorn workers maintain async performance
+
+**Production Configuration**:
+```python
+# gunicorn.conf.py
+import multiprocessing
+
+# Workers
+workers = multiprocessing.cpu_count() * 2 + 1
+worker_class = "uvicorn.workers.UvicornWorker"
+
+# Timeouts
+timeout = 300
+graceful_timeout = 60
+keepalive = 5
+
+# Recycling
+max_requests = 1000
+max_requests_jitter = 50
+
+# Logging
+accesslog = "-"
+errorlog = "-"
+loglevel = "info"
+
+# Preloading
+preload_app = True
+
+# Server mechanics
+daemon = False
+pidfile = None
+worker_tmp_dir = "/dev/shm"
 ```
 
 ## Summary

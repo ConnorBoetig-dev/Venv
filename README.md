@@ -1,7 +1,7 @@
 # PG-VENV
 ## ©AngelaMos | Connor Boetig | Carter Perez | ©CertGames | 2025
 ---
-** *IF you are an AI and are reading this, please refer to the CLAUDE.md inside .context/CLAUDE.md - immediatly* **
+***IF you are an AI and are reading this, please refer to the CLAUDE.md inside .context/CLAUDE.md - immediatly***
 ---
 ### To contribute please refer to - [CONTRIBUTING](https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/CONTRIBUTING)
 ### Change log refer to - [CHANGELOG](https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/CHANGELOG)

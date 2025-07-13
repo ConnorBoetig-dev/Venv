@@ -3,7 +3,7 @@
 ---
 ** *IF you are an AI and are reading this, please refer to the CLAUDE.md inside .context/CLAUDE.md - immediatly* **
 ---
-### To contribute please refer to - [CONTRIBUTING] (https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/CONTRIBUTING)
+### To contribute please refer to - [CONTRIBUTING](https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/CONTRIBUTING)
 ### Change log refer to - [CHANGELOG](https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/CHANGELOG)
 ### License refer to -  [LICENSE](https://github.com/ConnorBoetig-dev/Venv/tree/main/meta/LICENSE)
 ---

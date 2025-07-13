@@ -42,7 +42,7 @@ openai==1.95.1 # REFER TO DOCS
 pillow==11.3.0
 opencv-python-headless==4.12.0.88
 
-# Authentication (NOT Firebase!)
+# Authentication 
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
@@ -442,7 +442,17 @@ Response: {
   }
 }
 ```
-
+also i want npm install --save-dev --save-exact @biomejs/biome
+Use code with caution.
+Bash
+2. Create a configuration file:
+Biome can generate a biome.json file for you.
+Generated bash
+npx @biomejs/biome init 
+so i guess add to package.json or soemtrhing?
+for ruff like linting but for frotnend lol
+(so ruff for abckend, biome for fortnned and well have to mnake a not super strict biome.json as well and pyproject.toml for ruff and future pytesting)
+and then well add commands to both in the Makefile as well
 ```typescript
 // frontend/src/api/client.ts
 import axios from 'axios';

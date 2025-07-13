@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from uuid import UUID
 
-from google import genai
+import google.genai as genai  # noqa: PLR0402
 from openai import AsyncOpenAI
 from PIL import Image
 
@@ -27,6 +27,7 @@ class AIServiceError(Exception):
     """
     Base exception for AI service errors.
     """
+
     pass
 
 
@@ -34,6 +35,7 @@ class GeminiError(AIServiceError):
     """
     Raised when Gemini API fails.
     """
+
     pass
 
 
@@ -41,6 +43,7 @@ class OpenAIError(AIServiceError):
     """
     Raised when OpenAI API fails.
     """
+
     pass
 
 
@@ -56,17 +59,30 @@ class AIService:
 
     def __init__(self):
         """
-        Initialize AI service with API clients.
+        Initialize AI service with lazy client initialization.
         """
-        # Initialize Gemini
-        self._gemini_client = genai.Client(api_key=settings.gemini_api_key)
+        self._gemini_client = None
+        self._openai_client = None
         self._gemini_model = "gemini-2.0-flash"  # FOR MVP (2.5 pro for prod)
-
-        # Initialize OpenAI
-        self._openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
         self._embedding_model = settings.embedding_model
 
-        logger.info("AI service initialized")
+        logger.info("AI service initialized (clients will be created on demand)")
+
+    def _ensure_gemini_client(self):
+        """Lazy initialization of Gemini client."""
+        if self._gemini_client is None:
+            if not settings.gemini_api_key:
+                raise GeminiError("Gemini API key not configured")
+            self._gemini_client = genai.Client(api_key=settings.gemini_api_key)
+        return self._gemini_client
+
+    def _ensure_openai_client(self):
+        """Lazy initialization of OpenAI client."""
+        if self._openai_client is None:
+            if not settings.openai_api_key:
+                raise OpenAIError("OpenAI API key not configured")
+            self._openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+        return self._openai_client
 
     async def analyze_media(self, upload_id: UUID) -> None:
         """
@@ -104,19 +120,22 @@ class AIService:
             if not description:
                 raise GeminiError("Gemini returned empty description")
 
-            logger.info(f"Gemini analysis complete for {upload_id}: {len(description)} chars")
+            logger.info(
+                f"Gemini analysis complete for {upload_id}: {len(description)} chars"
+            )
 
             # Update status to embedding
             await upload.update_status(ProcessingStatus.EMBEDDING)
 
             # Generate embedding from description
             embedding = await self._generate_embedding(description)
-            logger.info(f"Generated embedding for {upload_id}: {len(embedding)} dimensions")
+            logger.info(
+                f"Generated embedding for {upload_id}: {len(embedding)} dimensions"
+            )
 
             # Update upload with results
             await upload.update_analysis(
-                gemini_summary=description,
-                embedding=embedding
+                gemini_summary=description, embedding=embedding
             )
 
             logger.info(f"AI processing completed for upload {upload_id}")
@@ -125,7 +144,7 @@ class AIService:
             logger.error(f"AI processing failed for upload {upload_id}: {e}")
             await upload.update_status(
                 ProcessingStatus.FAILED,
-                error_message=f"AI processing failed: {str(e)[:500]}"
+                error_message=f"AI processing failed: {str(e)[:500]}",
             )
 
     async def _analyze_image_with_gemini(self, image_path: Path) -> str:
@@ -158,7 +177,7 @@ Be specific and descriptive, using natural language that someone might use to se
             response = await self._call_gemini_async(
                 prompt=prompt,
                 image_data=image_data,
-                mime_type=self._get_mime_type(image_path)
+                mime_type=self._get_mime_type(image_path),
             )
 
             return response.strip()
@@ -188,7 +207,7 @@ Be specific and descriptive, using natural language that someone might use to se
                 user_id=user_id,
                 upload_id=upload_id,
                 extension=extension,
-                max_frames=settings.max_video_frames
+                max_frames=settings.max_video_frames,
             )
 
             if not frame_paths:
@@ -217,7 +236,7 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
             response = await self._call_gemini_async(
                 prompt=prompt,
                 image_data=frames_data[0],  # Use first frame as primary
-                additional_context=f"Video with {len(frames_data)} sampled frames"
+                additional_context=f"Video with {len(frames_data)} sampled frames",
             )
 
             return response.strip()
@@ -231,7 +250,7 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
         prompt: str,
         image_data: bytes,
         mime_type: str = "image/jpeg",
-        additional_context: str | None = None
+        additional_context: str | None = None,
     ) -> str:
         """
         Call Gemini API asynchronously.
@@ -248,11 +267,8 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
         try:
             # Prepare the content
             contents = [
-                genai.types.Part.from_bytes(
-                    data=image_data,
-                    mime_type=mime_type
-                ),
-                prompt
+                genai.types.Part.from_bytes(data=image_data, mime_type=mime_type),
+                prompt,
             ]
 
             if additional_context:
@@ -262,9 +278,9 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                self._gemini_client.models.generate_content,
+                self._ensure_gemini_client().models.generate_content,
                 self._gemini_model,
-                contents
+                contents,
             )
 
             if not response.text:
@@ -294,10 +310,8 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
                 logger.warning(f"Truncated text from {len(text)} to {max_chars} chars")
 
             # Call OpenAI embeddings API
-            response = await self._openai_client.embeddings.create(
-                input=text,
-                model=self._embedding_model,
-                encoding_format="float"
+            response = await self._ensure_openai_client().embeddings.create(
+                input=text, model=self._embedding_model, encoding_format="float"
             )
 
             embedding = response.data[0].embedding
@@ -328,7 +342,9 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
         }
         return ext_to_mime.get(file_path.suffix.lower(), "image/jpeg")
 
-    async def batch_analyze(self, upload_ids: list[UUID], max_concurrent: int = 3) -> None:
+    async def batch_analyze(
+        self, upload_ids: list[UUID], max_concurrent: int = 3
+    ) -> None:
         """
         Analyze multiple uploads concurrently.
 
@@ -356,17 +372,14 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
         Returns:
             Dict with service availability
         """
-        results = {
-            "gemini": False,
-            "openai": False
-        }
+        results = {"gemini": False, "openai": False}
 
         # Test Gemini
         try:
             test_response = await self._call_gemini_async(
                 prompt="Say 'Hello'",
                 image_data=self._create_test_image(),
-                mime_type="image/png"
+                mime_type="image/png",
             )
             results["gemini"] = bool(test_response)
         except Exception as e:
@@ -386,15 +399,13 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
         Create a small test image for connectivity testing.
         """
         # Create 100x100 white image
-        img = Image.new('RGB', (100, 100), color='white')
+        img = Image.new("RGB", (100, 100), color="white")
 
         # Save to bytes
         buffer = io.BytesIO()
-        img.save(buffer, format='PNG')
+        img.save(buffer, format="PNG")
         return buffer.getvalue()
 
 
 # Global instance
 ai_service = AIService()
-
-

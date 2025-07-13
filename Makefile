@@ -226,7 +226,10 @@ help:
 	@echo "  \033[94mmigration\033[0m   - Create a new Alembic migration file."
 	@echo ""
 	@echo "\033[1m\033[33mCode Quality:\033[0m"
-	@echo "  \033[35mtest\033[0m         - Run the test suite inside the dev container."
+	@echo "  \033[35mtest\033[0m         - Run the full test suite with coverage."
+	@echo "  \033[35mtest-unit\033[0m    - Run only unit tests."
+	@echo "  \033[35mtest-integration\033[0m - Run only integration tests."
+	@echo "  \033[35mtest-no-cov\033[0m - Run tests without coverage report."
 	@echo "  \033[33mformat\033[0m       - Format both backend and frontend code."
 	@echo "  \033[33mlint\033[0m         - Lint both backend and frontend code."
 
@@ -236,23 +239,23 @@ help:
 # --- Development environment ---
 dev:
 	$(call ASCII_DEV)
-	@echo "\033[32m🚀 Starting development environment...\033[0m"
+	@echo "\033[32m Starting development environment...\033[0m"
 	@docker-compose -f infra/dev/docker-compose.yml up --build -d
-	@echo "\033[32m✅ Development environment started! Run 'make logs' to see logs.\033[0m"
+	@echo "\033[32m Development environment started! Run 'make logs' to see logs.\033[0m"
 	$(call ASCII_DEV)
 
 # --- Production environment ---
 prod:
 	$(call ASCII_PROD)
-	@echo "\033[36m🏭 Starting production environment...\033[0m"
+	@echo "\033[36mStarting production environment...\033[0m"
 	@docker-compose -f infra/prod/docker-compose.yml up --build -d
-	@echo "\033[36m✅ Production environment started! Run 'make logs' to see logs.\033[0m"
+	@echo "\033[36m Production environment started! Run 'make logs' to see logs.\033[0m"
 	$(call ASCII_PROD)
 
 # --- Stop all containers ---
 down:
 	$(call ASCII_DOWN)
-	@echo "\033[31m🛑 Stopping all containers...\033[0m"
+	@echo "\033[31m Stopping all containers...\033[0m"
 	@if [ -f infra/dev/docker-compose.yml ]; then \
 		docker-compose -f infra/dev/docker-compose.yml down; \
 	fi
@@ -265,7 +268,7 @@ down:
 # --- Follow logs ---
 logs:
 	$(call ASCII_LOGS)
-	@echo "\033[34m📜 Following container logs (Ctrl+C to exit)...\033[0m"
+	@echo "\033[34m Following container logs (Ctrl+C to exit)...\033[0m"
 	@if [ -f infra/dev/docker-compose.yml ] && docker-compose -f infra/dev/docker-compose.yml ps -q | grep -q .; then \
 		docker-compose -f infra/dev/docker-compose.yml logs -f; \
 	elif [ -f infra/prod/docker-compose.yml ] && docker-compose -f infra/prod/docker-compose.yml ps -q | grep -q .; then \
@@ -303,9 +306,9 @@ nuke:
 # --- Initial setup ---
 setup:
 	$(call ASCII_SETUP)
-	@echo "\033[36m🛠️  Running initial setup...\033[0m"
+	@echo "\033[36m Running initial setup...\033[0m"
 	@bash setup.sh
-	@echo "\033[32m✅ Setup complete!\033[0m"
+	@echo "\033[32m Setup complete!\033[0m"
 	$(call ASCII_SETUP)
 
 # --- Database migrations ---
@@ -313,14 +316,14 @@ migrate-dev:
 	$(call ASCII_MIGRATE)
 	@echo "\033[94mApplying DEV database migrations...\033[0m"
 	@docker-compose -f infra/dev/docker-compose.yml exec backend alembic upgrade head
-	@echo "\033[32m✅ DEV migrations applied.\033[0m"
+	@echo "\033[32m DEV migrations applied.\033[0m"
 	$(call ASCII_MIGRATE)
 
 migrate-prod:
 	$(call ASCII_MIGRATE)
 	@echo "\033[94mApplying PROD database migrations...\033[0m"
 	@docker-compose -f infra/prod/docker-compose.yml exec backend alembic upgrade head
-	@echo "\033[32m✅ PROD migrations applied.\033[0m"
+	@echo "\033[32m PROD migrations applied.\033[0m"
 	$(call ASCII_MIGRATE)
 
 migration:
@@ -333,8 +336,26 @@ migration:
 # --- Code quality ---
 test:
 	$(call ASCII_TEST)
-	@echo "\033[35m🧪 Running tests...\033[0m"
-	@docker-compose -f infra/dev/docker-compose.yml exec backend pytest
+	@echo "\033[35m  Running tests...\033[0m"
+	@cd backend && chmod +x tests/run_tests.sh && ./tests/run_tests.sh
+	$(call ASCII_TEST)
+
+test-unit:
+	$(call ASCII_TEST)
+	@echo "\033[35m  Running unit tests...\033[0m"
+	@cd backend && chmod +x tests/run_tests.sh && ./tests/run_tests.sh --unit
+	$(call ASCII_TEST)
+
+test-integration:
+	$(call ASCII_TEST)
+	@echo "\033[35m  Running integration tests...\033[0m"
+	@cd backend && chmod +x tests/run_tests.sh && ./tests/run_tests.sh --integration
+	$(call ASCII_TEST)
+
+test-no-cov:
+	$(call ASCII_TEST)
+	@echo "\033[35m  Running tests without coverage...\033[0m"
+	@cd backend && chmod +x tests/run_tests.sh && ./tests/run_tests.sh --no-coverage
 	$(call ASCII_TEST)
 
 format:

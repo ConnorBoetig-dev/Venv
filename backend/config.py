@@ -140,7 +140,7 @@ class Settings(BaseSettings):
         """
         Validate environment is one of allowed values.
         """
-        allowed = {"development", "staging", "production"}
+        allowed = {"development", "staging", "production", "testing"}
         if v not in allowed:
             raise ValueError(f"environment must be one of {allowed}")
         return v
@@ -173,10 +173,11 @@ class Settings(BaseSettings):
         """
         Validate API keys are present.
         """
-        if not v and info.data.get("environment") != "development":
+        env = info.data.get("environment")
+        if not v and env not in ("development", "testing"):
             field_name = info.field_name
             raise ValueError(
-                f"{field_name} is required in {info.data.get('environment')} environment"
+                f"{field_name} is required in {env} environment"
             )
         return v
 

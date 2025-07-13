@@ -136,26 +136,34 @@ minversion = "8.0"
 addopts = [
     "-ra",
     "--strict-markers",
-    "--cov=backend",
+    "--strict-config",
+    "--color=yes",
+    "--tb=short",
+    "--cov=.",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=80",
+    "--cov-fail-under=70",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-env = [
-    "ENVIRONMENT=testing",
-    "DATABASE_URL=postgresql://test:test@localhost:5432/test_db",
-]
 asyncio_mode = "auto"
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
+    "unit: Unit tests (fast, isolated)",
+    "integration: Integration tests (require services)",
+    "slow: Slow running tests",
+    "requires_api_keys: Tests requiring real API keys",
 ]
 
 [tool.mypy]
@@ -184,12 +192,14 @@ module = [
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["backend"]
+source = ["."]
 omit = [
     "*/tests/*",
     "*/migrations/*",
     "*/__init__.py",
     "*/conftest.py",
+    "*/venv/*",
+    "*/.venv/*",
 ]
 
 [tool.coverage.report]

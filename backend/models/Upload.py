@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
-from database import db
+import database
 from models import BaseModel
 
 
@@ -85,7 +85,7 @@ class Upload(BaseModel):
         """
         Create uploads table with vector column and indexes.
         """
-        await db.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        await database.db.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
         query = """
             CREATE TABLE IF NOT EXISTS uploads (
@@ -121,7 +121,7 @@ class Upload(BaseModel):
             CREATE INDEX IF NOT EXISTS idx_uploads_created_at ON uploads(created_at DESC);
         """
 
-        await db.execute(query)
+        await database.db.execute(query)
 
         # Create vector index for similarity search (after some data exists)
         # This is deferred until we have enough data for better index building
@@ -163,7 +163,7 @@ class Upload(BaseModel):
             RETURNING *
         """
 
-        record = await db.fetchrow(
+        record = await database.db.fetchrow(
             query,
             user_id,
             filename,
@@ -224,7 +224,7 @@ class Upload(BaseModel):
         """
 
         params.extend([limit, offset])
-        records = await db.fetch(query, *params)
+        records = await database.db.fetch(query, *params)
         return cls.from_records(records)
 
     @classmethod
@@ -253,7 +253,7 @@ class Upload(BaseModel):
         if user_id:
             filters["user_id"] = user_id
 
-        records = await db.vector_similarity_search(
+        records = await database.db.vector_similarity_search(
             table_name=cls.__tablename__,
             embedding_column="embedding",
             query_embedding=query_embedding,
@@ -281,7 +281,7 @@ class Upload(BaseModel):
         Args:
             lists: Number of clusters for IVFFlat index
         """
-        await db.create_vector_index(
+        await database.db.create_vector_index(
             table_name=cls.__tablename__,
             embedding_column="embedding",
             index_type="ivfflat",
@@ -303,7 +303,7 @@ class Upload(BaseModel):
             RETURNING *
         """
 
-        record = await db.fetchrow(
+        record = await database.db.fetchrow(
             query,
             self.user_id,
             self.filename,
@@ -344,7 +344,7 @@ class Upload(BaseModel):
             RETURNING *
         """
 
-        record = await db.fetchrow(
+        record = await database.db.fetchrow(
             query,
             self.filename,
             self.file_path,
@@ -386,7 +386,7 @@ class Upload(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(query, status, error_message, self.id)
+        updated_at = await database.db.fetchval(query, status, error_message, self.id)
         if updated_at:
             self.processing_status = status
             self.error_message = error_message
@@ -415,7 +415,7 @@ class Upload(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(
+        updated_at = await database.db.fetchval(
             query, gemini_summary, embedding, ProcessingStatus.COMPLETED, self.id
         )
 
@@ -443,7 +443,7 @@ class Upload(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(query, thumbnail_path, self.id)
+        updated_at = await database.db.fetchval(query, thumbnail_path, self.id)
         if updated_at:
             self.thumbnail_path = thumbnail_path
             self.updated_at = updated_at
@@ -468,7 +468,7 @@ class Upload(BaseModel):
             LIMIT $2
         """
 
-        records = await db.fetch(query, ProcessingStatus.PENDING, limit)
+        records = await database.db.fetch(query, ProcessingStatus.PENDING, limit)
         return cls.from_records(records)
 
     @classmethod
@@ -485,7 +485,7 @@ class Upload(BaseModel):
             GROUP BY processing_status
         """
 
-        records = await db.fetch(query, user_id)
+        records = await database.db.fetch(query, user_id)
         return {record["processing_status"]: record["count"] for record in records}
 
     def to_dict(self, exclude: set[str] | None = None) -> dict[str, Any]:

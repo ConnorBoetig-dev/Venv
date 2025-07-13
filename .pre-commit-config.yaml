@@ -1,0 +1,32 @@
+# .pre-commit-config.yaml
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.13
+    hooks:
+      - id: ruff
+        args: [--fix, --line-length=120]
+        files: ^backend/ng/
+      - id: ruff-format
+        args: [--line-length=120]
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 
+    hooks:
+      - id: check-ast
+      - id: debug-statements
+        files: ^backend/
+  - repo: local
+    hooks:
+      - id: pg-tests
+        name: Run PG-VENV Tests
+        entry: make -C test
+        language: system
+        files: ^backend/.*$  
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+        require_serial: true
+        verbose: true
+        description: 'Run all pg tests'

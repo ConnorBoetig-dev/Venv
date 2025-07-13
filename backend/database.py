@@ -90,7 +90,6 @@ class DatabasePool:
         Then register vector type codec for all connections.
         """
         async with self.acquire() as conn:
-            # Create uuid-ossp extension for UUID generation
             try:
                 await conn.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
                 logger.info("uuid-ossp extension created successfully")
@@ -99,7 +98,6 @@ class DatabasePool:
                     f"uuid-ossp extension is required but could not be created: {e}"
                 ) from e
 
-            # Create pgvector extension for vector operations
             result = await conn.fetchval(
                 """
                 SELECT EXISTS(

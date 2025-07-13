@@ -14,6 +14,7 @@ from uuid import UUID
 from asyncpg import Record
 
 from database import db
+import database
 
 T = TypeVar("T", bound="BaseModel")
 
@@ -110,7 +111,7 @@ class BaseModel:
             WHERE id = $1
         """
 
-        record = await db.fetchrow(query, id)
+        record = await database.db.fetchrow(query, id)
         return cls.from_record(record)
 
     @classmethod
@@ -131,7 +132,7 @@ class BaseModel:
             LIMIT $1 OFFSET $2
         """
 
-        records = await db.fetch(query, limit, offset)
+        records = await database.db.fetch(query, limit, offset)
         return cls.from_records(records)
 
     @classmethod
@@ -156,7 +157,7 @@ class BaseModel:
             {where_clause}
         """
 
-        count = await db.fetchval(query, *params)
+        count = await database.db.fetchval(query, *params)
         return count or 0
 
     async def save(self) -> None:
@@ -195,7 +196,7 @@ class BaseModel:
             RETURNING id
         """
 
-        result = await db.fetchval(query, self.id)
+        result = await database.db.fetchval(query, self.id)
         return result is not None
 
     async def refresh(self) -> None:
@@ -210,7 +211,7 @@ class BaseModel:
             WHERE id = $1
         """
 
-        record = await db.fetchrow(query, self.id)
+        record = await database.db.fetchrow(query, self.id)
         if record is None:
             raise ValueError(f"Record with id {self.id} not found")
 

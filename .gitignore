@@ -40,6 +40,7 @@ env/
 .env
 .env.local
 .env.*.local
+.env.test.local
 infra/dev/env/.env.dev
 infra/prod/env/.env.prod
 
@@ -179,6 +180,8 @@ dmypy.json
 # Uploaded files (except .gitkeep)
 storage/uploads/**
 !storage/uploads/.gitkeep
+storage/test_uploads/**
+!storage/test_uploads/.gitkeep
 
 # Node.js
 node_modules/
@@ -214,3 +217,5 @@ infra/prod/ssl/
 .ipynb_checkpoints
 
 backend/PG_VENV.egg-info
+coverage.xml
+htmlcov/

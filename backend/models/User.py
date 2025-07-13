@@ -11,7 +11,7 @@ from typing import Any
 
 from asyncpg import UniqueViolationError
 
-from database import db
+import database
 from models import BaseModel
 
 
@@ -58,7 +58,7 @@ class User(BaseModel):
             CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
         """
 
-        await db.execute(query)
+        await database.db.execute(query)
 
     @classmethod
     async def create(
@@ -76,7 +76,7 @@ class User(BaseModel):
         """
 
         try:
-            record = await db.fetchrow(query, email.lower(), password_hash, is_active)
+            record = await database.db.fetchrow(query, email.lower(), password_hash, is_active)
             return cls.from_record(record)
         except UniqueViolationError as e:
             raise ValueError(f"User with email {email} already exists") from e
@@ -93,7 +93,7 @@ class User(BaseModel):
             WHERE LOWER(email) = LOWER($1)
         """
 
-        record = await db.fetchrow(query, email)
+        record = await database.db.fetchrow(query, email)
         return cls.from_record(record)
 
     @classmethod
@@ -108,7 +108,7 @@ class User(BaseModel):
             WHERE LOWER(email) = LOWER($1) AND is_active = TRUE
         """
 
-        record = await db.fetchrow(query, email)
+        record = await database.db.fetchrow(query, email)
         return cls.from_record(record)
 
     @classmethod
@@ -125,7 +125,7 @@ class User(BaseModel):
             LIMIT $1 OFFSET $2
         """
 
-        records = await db.fetch(query, limit, offset)
+        records = await database.db.fetch(query, limit, offset)
         return cls.from_records(records)
 
     async def _insert(self) -> None:
@@ -138,7 +138,7 @@ class User(BaseModel):
             RETURNING *
         """
 
-        record = await db.fetchrow(
+        record = await database.db.fetchrow(
             query, self.email.lower(), self.password_hash, self.is_active
         )
 
@@ -159,7 +159,7 @@ class User(BaseModel):
             RETURNING *
         """
 
-        record = await db.fetchrow(
+        record = await database.db.fetchrow(
             query, self.email.lower(), self.password_hash, self.is_active, self.id
         )
 
@@ -182,7 +182,7 @@ class User(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(query, new_password_hash, self.id)
+        updated_at = await database.db.fetchval(query, new_password_hash, self.id)
         if updated_at:
             self.password_hash = new_password_hash
             self.updated_at = updated_at
@@ -202,7 +202,7 @@ class User(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(query, self.id)
+        updated_at = await database.db.fetchval(query, self.id)
         if updated_at:
             self.is_active = False
             self.updated_at = updated_at
@@ -222,7 +222,7 @@ class User(BaseModel):
             RETURNING updated_at
         """
 
-        updated_at = await db.fetchval(query, self.id)
+        updated_at = await database.db.fetchval(query, self.id)
         if updated_at:
             self.is_active = True
             self.updated_at = updated_at
@@ -241,14 +241,18 @@ class User(BaseModel):
             )
         """
 
-        return await db.fetchval(query, email)
+        return await database.db.fetchval(query, email)
 
     def to_dict(self, exclude: set[str] | None = None) -> dict[str, Any]:
         """
         Convert to dictionary, excluding password_hash by default.
         """
-        exclude = exclude or set()
-        exclude.add("password_hash")
+        if exclude is None:
+            exclude = {"password_hash"}
+        else:
+            # If exclude is explicitly provided (even if empty), respect it
+            # Only add password_hash if exclude is None (default behavior)
+            pass
         return super().to_dict(exclude)
 
     def __repr__(self) -> str:

@@ -100,7 +100,7 @@ async def process_upload_background(
             if upload and upload.processing_status not in ["completed", "failed"]:
                 await upload.update_status(
                     ProcessingStatus.FAILED,
-                    error_message=f"Processing failed: {str(e)[:200]}"
+                    error_message=f"Processing failed: {str(e)[:200]}",
                 )
         except Exception as update_error:
             logger.error(f"Failed to update status for {upload_id}: {update_error}")

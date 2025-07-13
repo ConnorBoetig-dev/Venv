@@ -22,10 +22,12 @@ from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from database import close_db, db, init_db
-from routers import auth, health, upload
-
-# Future imports:
-# from routers import search
+from routers import (
+    auth,
+    health,
+    search,
+    upload,
+)
 
 # logging
 logging.basicConfig(
@@ -160,8 +162,7 @@ async def add_request_id(request: Request, call_next):
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
-# Future router:
-# app.include_router(search.router, prefix="/api")
+app.include_router(search.router, prefix="/api")
 
 
 # Root endpoint

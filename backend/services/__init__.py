@@ -18,6 +18,12 @@ from .storage_service import (
     UnsupportedFileTypeError,
     storage_service,
 )
+from .search_service import (
+    SearchService,
+    SearchServiceError,
+    QueryEmbeddingError,
+    search_service,
+)
 
 __all__ = [
 
@@ -34,4 +40,10 @@ __all__ = [
     "GeminiError",
     "OpenAIError",
     "ai_service",
+
+    # Search Service
+    "SearchService",
+    "SearchServiceError",
+    "QueryEmbeddingError",
+    "search_service",
 ]

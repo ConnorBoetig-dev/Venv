@@ -2,10 +2,11 @@
 Routers package for FastAPI endpoints.
 """
 
-from . import auth, health # future search and upload
+from . import auth, health, upload  # future search
 
 __all__ = [
     "auth",
     "health",
-    # future search and upload
+    "upload",
+    # future search
 ]

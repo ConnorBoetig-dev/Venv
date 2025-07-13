@@ -22,10 +22,10 @@ from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from database import close_db, db, init_db
-from routers import auth, health
+from routers import auth, health, upload
 
 # Future imports:
-# from routers import upload, search
+# from routers import search
 
 # logging
 logging.basicConfig(
@@ -43,7 +43,6 @@ async def lifespan(_app: FastAPI):
     Handles startup and shutdown events for database connections
     and any other resources that need initialization/cleanup.
     """
-    # Startup
     logger.info(f"Starting {settings.app_name} in {settings.environment} mode")
 
     try:
@@ -75,7 +74,6 @@ app = FastAPI(
     description="Vector multimodal search for your personal media collection",
     version="0.1.0",
     lifespan=lifespan,
-    # Only show docs in dev
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
     openapi_url="/openapi.json" if settings.is_development else None,
@@ -134,7 +132,6 @@ app.add_middleware(
 )
 
 
-# Request ID middleware for tracking
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
     """
@@ -162,9 +159,8 @@ async def add_request_id(request: Request, call_next):
 # Routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
-
-# Future routers:
-# app.include_router(upload.router, prefix="/api")
+app.include_router(upload.router, prefix="/api")
+# Future router:
 # app.include_router(search.router, prefix="/api")
 
 

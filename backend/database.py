@@ -79,20 +79,27 @@ class DatabasePool:
 
     async def _init_connection(self, conn: Connection) -> None:
         """
-        Initialize individual connection with pgvector types.
+        Initialize individual connection.
+        Vector type registration happens after extension verification.
         """
-        await conn.set_type_codec(
-            "vector",
-            encoder=lambda v: f"[{','.join(map(str, v))}]",
-            decoder=lambda v: list(map(float, v[1:-1].split(","))),
-            schema="public",
-        )
+        pass
 
     async def _verify_pgvector(self) -> None:
         """
-        Verify pgvector extension is installed and create if needed.
+        Verify required extensions are installed and create if needed.
+        Then register vector type codec for all connections.
         """
         async with self.acquire() as conn:
+            # Create uuid-ossp extension for UUID generation
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+                logger.info("uuid-ossp extension created successfully")
+            except asyncpg.PostgresError as e:
+                raise RuntimeError(
+                    f"uuid-ossp extension is required but could not be created: {e}"
+                ) from e
+
+            # Create pgvector extension for vector operations
             result = await conn.fetchval(
                 """
                 SELECT EXISTS(
@@ -109,6 +116,23 @@ class DatabasePool:
                     raise RuntimeError(
                         f"pgvector extension is required but could not be created: {e}"
                     ) from e
+
+        await self._register_vector_types()
+
+    async def _register_vector_types(self) -> None:
+        """
+        Register vector type codec for all connections in the pool.
+        """
+        if self._pool is None:
+            return
+
+        async with self.acquire() as conn:
+            await conn.set_type_codec(
+                "vector",
+                encoder=lambda v: f"[{','.join(map(str, v))}]",
+                decoder=lambda v: list(map(float, v[1:-1].split(","))),
+                schema="public",
+            )
 
     @asynccontextmanager
     async def acquire(self):

@@ -25,7 +25,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = settings.access_token_expire_minutes
 REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 30
 
 # OAuth2 scheme for token extraction
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
 class TokenType:

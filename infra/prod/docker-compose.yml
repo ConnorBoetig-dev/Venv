@@ -9,7 +9,6 @@ services:
       POSTGRES_DB: multimodal_search_prod
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

@@ -109,11 +109,10 @@ backend/
     ├── conftest.py               # Pytest fixtures (test db, client, etc)
     ├── unit/                     # Unit tests for individual functions
     └── integration/              # Integration tests for full API flows
-```
+
 
 ## Frontend Structure
 
-```
 frontend/
 ├── package.json                   # Node dependencies and scripts
 ├── vite.config.ts                # Vite bundler configuration
@@ -160,8 +159,6 @@ frontend/
 │       └── validators.ts        # Form validation helpers
 ```
 
-This structure follows clean architecture principles with clear separation of concerns!
-```
 
 ## Database Schema (Simplified)
 

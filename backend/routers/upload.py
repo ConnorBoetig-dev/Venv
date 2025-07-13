@@ -26,7 +26,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from auth import get_current_user
-from models import Upload, User
+from models import (
+    ProcessingStatus,
+    Upload,
+    User,
+)
 from schemas import (
     PaginatedResponse,
     UploadListParams,
@@ -36,6 +40,7 @@ from services import (
     FileTooLargeError,
     StorageError,
     UnsupportedFileTypeError,
+    ai_service,
     storage_service,
 )
 
@@ -83,14 +88,22 @@ async def process_upload_background(
             if upload:
                 await upload.update_thumbnail(thumbnail_path)
 
-        # TODO: Queue for AI processing (Gemini analysis + OpenAI embeddings)
-        # For now, just log it
-        logger.info(f"Upload {upload_id} ready for AI processing")
+        # Queue for AI processing
+        logger.info(f"Starting AI processing for upload {upload_id}")
+        await ai_service.analyze_media(upload_id)
+        logger.info(f"AI processing completed for upload {upload_id}")
 
     except Exception as e:
         logger.error(f"Background processing failed for upload {upload_id}: {e}")
-        # TODO: Update upload status to indicate thumbnail generation failed
-        # But don't fail the whole upload - user can still see the original
+        try:
+            upload = await Upload.find_by_id(upload_id)
+            if upload and upload.processing_status not in ["completed", "failed"]:
+                await upload.update_status(
+                    ProcessingStatus.FAILED,
+                    error_message=f"Processing failed: {str(e)[:200]}"
+                )
+        except Exception as update_error:
+            logger.error(f"Failed to update status for {upload_id}: {update_error}")
 
 
 @router.post(

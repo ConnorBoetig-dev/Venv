@@ -42,7 +42,7 @@ openai==1.95.1 # REFER TO DOCS
 pillow==11.3.0
 opencv-python-headless==4.12.0.88
 
-# Authentication (NOT Firebase!)
+# Authentication 
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
@@ -59,29 +59,108 @@ python-dotenv==1.0.1
 ## Project Structure
 
 ```
-multimodal-search/
-├── backend/
-│   ├── models/              # Database models
-│   ├── routers/             # API endpoints
-│   ├── schemas/             # Pydantic schemas
-│   ├── services/            # Business logic
-│   ├── auth/                # JWT authentication
-│   ├── config.py            # Settings from .env
-│   └── main.py              # FastAPI app
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
-│   │   ├── hooks/           # Custom hooks
-│   │   ├── api/             # API client
-│   │   └── App.tsx          # Main app
-│   ├── package.json
-│   └── vite.config.ts
-├── storage/                 # Local file storage
-│   └── uploads/
-├── docker-compose.yml       # Local services
-├── nginx.conf               # Nginx config
-└── .env                     # Environment variables
+Here's what goes in each file/directory:
+
+## Backend Structure
+
+```
+backend/
+├── __init__.py                    # Empty, marks directory as Python package
+├── main.py                        # FastAPI app initialization, middleware, router registration
+├── config.py                      # Pydantic Settings class loading from .env file
+├── database.py                    # Async PostgreSQL connection, session management
+├── dependencies.py                # Reusable FastAPI dependencies (get_current_user)
+├── pyproject.toml                 # Python project metadata, dependencies, tool configs
+│
+├── auth/                          # Authentication logic
+│   ├── jwt_auth.py               # JWT token creation, validation, decode functions
+│   └── password.py               # Password hashing/verification with bcrypt
+│
+├── models/                        # Database models (SQLAlchemy/raw SQL)
+│   ├── base.py                   # BaseModel class with id, created_at, updated_at
+│   ├── user.py                   # User model with CRUD operations
+│   └── upload.py                 # Upload model with file metadata and embeddings
+│
+├── routers/                       # API endpoints (controllers)
+│   ├── auth.py                   # POST /register, POST /token endpoints
+│   ├── upload.py                 # POST /upload, GET /uploads endpoints
+│   ├── search.py                 # POST /search endpoint for semantic search
+│   └── health.py                 # GET /health for container health checks
+│
+├── schemas/                       # Pydantic models for request/response validation
+│   ├── user.py                   # UserCreate, UserResponse models
+│   ├── auth.py                   # Token, TokenData, LoginRequest models
+│   ├── upload.py                 # UploadResponse, UploadStatus models
+│   └── search.py                 # SearchRequest, SearchResult models
+│
+├── services/                      # Business logic layer
+│   ├── ai_service.py             # Gemini integration for media analysis
+│   ├── embedding_service.py      # OpenAI embeddings generation
+│   ├── search_service.py         # Vector similarity search with pgvector
+│   └── storage_service.py        # Local file storage operations
+│
+├── utils/                         # Helper functions
+│   ├── validators.py             # File type/size validation functions
+│   └── helpers.py                # Misc utilities (file paths, formatting)
+│
+├── migrations/                    # Alembic database migrations
+│
+└── tests/                         # Test files
+    ├── conftest.py               # Pytest fixtures (test db, client, etc)
+    ├── unit/                     # Unit tests for individual functions
+    └── integration/              # Integration tests for full API flows
+```
+
+## Frontend Structure
+
+```
+frontend/
+├── package.json                   # Node dependencies and scripts
+├── vite.config.ts                # Vite bundler configuration
+├── tsconfig.json                 # TypeScript compiler options
+├── tailwind.config.js            # Tailwind CSS theme customization
+├── biome.json                    # Code formatter/linter rules
+│
+├── src/
+│   ├── main.tsx                  # React app entry point, providers setup
+│   ├── App.tsx                   # Root component with router
+│   ├── index.css                 # Global styles, Tailwind imports
+│   ├── vite-env.d.ts            # TypeScript environment variable types
+│   │
+│   ├── api/
+│   │   └── client.ts            # Axios instance with auth interceptors
+│   │
+│   ├── components/               # Reusable UI components
+│   │   ├── Layout.tsx           # App layout with nav/footer
+│   │   ├── FileUpload.tsx       # Drag-drop upload component
+│   │   ├── MediaGrid.tsx        # Grid display of uploads
+│   │   └── SearchBar.tsx        # Search input with suggestions
+│   │
+│   ├── pages/                    # Page components (routes)
+│   │   ├── Home.tsx             # Landing/search page
+│   │   ├── Login.tsx            # Login form page
+│   │   ├── Register.tsx         # Registration form page
+│   │   ├── Dashboard.tsx        # User's uploads gallery
+│   │   └── Upload.tsx           # File upload page
+│   │
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── useAuth.ts           # Authentication state hook
+│   │   ├── useUpload.ts         # File upload logic hook
+│   │   └── useSearch.ts         # Search functionality hook
+│   │
+│   ├── store/
+│   │   └── authStore.ts         # Zustand auth state management
+│   │
+│   ├── types/                    # TypeScript type definitions
+│   │   ├── api.ts               # API response types
+│   │   └── models.ts            # Data model interfaces
+│   │
+│   └── utils/                    # Helper functions
+│       ├── formatters.ts        # Date/size formatting
+│       └── validators.ts        # Form validation helpers
+```
+
+This structure follows clean architecture principles with clear separation of concerns!
 ```
 
 ## Database Schema (Simplified)
@@ -442,7 +521,17 @@ Response: {
   }
 }
 ```
-
+also i want npm install --save-dev --save-exact @biomejs/biome
+Use code with caution.
+Bash
+2. Create a configuration file:
+Biome can generate a biome.json file for you.
+Generated bash
+npx @biomejs/biome init 
+so i guess add to package.json or soemtrhing?
+for ruff like linting but for frotnend lol
+(so ruff for abckend, biome for fortnned and well have to mnake a not super strict biome.json as well and pyproject.toml for ruff and future pytesting)
+and then well add commands to both in the Makefile as well
 ```typescript
 // frontend/src/api/client.ts
 import axios from 'axios';

@@ -76,5 +76,3 @@ __all__ = [
     "SimilarUploadsRequest",
     "SearchHistoryItem",
 ]
-
-

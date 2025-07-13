@@ -109,7 +109,7 @@ esac
 
 # Add coverage if enabled
 if [ "$COVERAGE" = true ]; then
-    PYTEST_CMD="$PYTEST_CMD --cov=. --cov-report=term-missing:skip-covered --cov-report=html --cov-fail-under=0"
+    PYTEST_CMD="$PYTEST_CMD --cov=. --cov-report=term-missing:skip-covered --cov-fail-under=0"
 fi
 
 # Add verbose if enabled
@@ -130,7 +130,7 @@ echo "================================"
 if $PYTEST_CMD; then
     echo "================================"
     echo -e "${GREEN}✅ All tests passed!${NC}"
-    
+
     if [ "$COVERAGE" = true ]; then
         echo -e "${YELLOW}Coverage report generated in htmlcov/index.html${NC}"
     fi

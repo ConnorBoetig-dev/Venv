@@ -10,12 +10,12 @@ for all test modules.
 import asyncio
 import os
 import sys
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
 from uuid import uuid4
 
+import asyncpg
 import pytest
 import pytest_asyncio
-import asyncpg
 from asyncpg import Connection
 from httpx import AsyncClient
 
@@ -40,7 +40,6 @@ def test_settings() -> Settings:
         redis_url="redis://localhost:6379/1",
         secret_key="test-secret-key-for-testing-only",
         debug=True,
-
         openai_api_key=os.getenv("TEST_OPENAI_API_KEY", ""),
         gemini_api_key=os.getenv("TEST_GEMINI_API_KEY", ""),
     )
@@ -51,25 +50,30 @@ class TestDatabaseWrapper:
     Wrapper that makes a test connection behave like the DatabasePool.
     This allows existing model code to work without modification.
     """
-    
+
     def __init__(self, connection: Connection):
         self.connection = connection
-    
+
     async def execute(self, query: str, *args, **kwargs):
         return await self.connection.execute(query, *args)
-    
+
     async def fetch(self, query: str, *args, **kwargs):
         return await self.connection.fetch(query, *args)
-    
+
     async def fetchrow(self, query: str, *args, **kwargs):
         return await self.connection.fetchrow(query, *args)
-    
+
     async def fetchval(self, query: str, *args, **kwargs):
         return await self.connection.fetchval(query, *args)
-    
-    async def vector_similarity_search(self, table_name: str, embedding_column: str, 
-                                       query_embedding: list[float], limit: int = 10, 
-                                       filters: dict = None):
+
+    async def vector_similarity_search(
+        self,
+        table_name: str,
+        embedding_column: str,
+        query_embedding: list[float],
+        limit: int = 10,
+        filters: dict | None = None,
+    ):
         """
         Perform vector similarity search using pgvector.
         """
@@ -99,9 +103,14 @@ class TestDatabaseWrapper:
         """
 
         return await self.connection.fetch(query, *params)
-    
-    async def create_vector_index(self, table_name: str, embedding_column: str, 
-                                  index_type: str = "ivfflat", lists: int = 100):
+
+    async def create_vector_index(
+        self,
+        table_name: str,
+        embedding_column: str,
+        index_type: str = "ivfflat",
+        lists: int = 100,
+    ):
         """
         Create a vector similarity index for efficient search.
         """
@@ -135,16 +144,16 @@ async def db_connection(test_settings: Settings) -> AsyncGenerator[Connection, N
     # Import here to avoid circular imports
     import database
     import models.Base
-    import models.User
     import models.Upload
-    
+    import models.User
+
     conn = await asyncpg.connect(test_settings.database_url)
-    
+
     try:
         # Ensure extensions exist
         await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
         await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-        
+
         # Register vector type codec
         await conn.set_type_codec(
             "vector",
@@ -152,35 +161,36 @@ async def db_connection(test_settings: Settings) -> AsyncGenerator[Connection, N
             decoder=lambda v: list(map(float, v[1:-1].split(","))),
             schema="public",
         )
-        
+
         # Register JSONB codec
         import json
+
         await conn.set_type_codec(
             "jsonb",
             encoder=json.dumps,
             decoder=json.loads,
             schema="pg_catalog",
         )
-        
+
         # Store original db instance
         original_db = database.db
-        
+
         # Create wrapper and override global db
         test_db_wrapper = TestDatabaseWrapper(conn)
         database.db = test_db_wrapper
         models.Base.db = test_db_wrapper
         models.User.db = test_db_wrapper
         models.Upload.db = test_db_wrapper
-        
+
         yield conn
-        
+
     finally:
         # Restore original db instance
         database.db = original_db
         models.Base.db = original_db
         models.User.db = original_db
         models.Upload.db = original_db
-        
+
         await conn.close()
 
 
@@ -191,7 +201,7 @@ async def clean_tables(db_connection: Connection) -> None:
     """
     await db_connection.execute("DROP TABLE IF EXISTS uploads CASCADE")
     await db_connection.execute("DROP TABLE IF EXISTS users CASCADE")
-    
+
     await db_connection.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -204,7 +214,7 @@ async def clean_tables(db_connection: Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
         CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
     """)
-    
+
     await db_connection.execute("""
         CREATE TABLE IF NOT EXISTS uploads (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -237,7 +247,7 @@ async def test_user(db_connection: Connection, clean_tables: None) -> User:
     """
     email = f"test_{uuid4().hex[:8]}@example.com"
     password_hash = hash_password("TestPass123!")
-    
+
     record = await db_connection.fetchrow(
         """
         INSERT INTO users (email, password_hash, is_active)
@@ -248,7 +258,7 @@ async def test_user(db_connection: Connection, clean_tables: None) -> User:
         password_hash,
         True,
     )
-    
+
     return User.from_record(record)
 
 
@@ -259,7 +269,7 @@ async def inactive_user(db_connection: Connection, clean_tables: None) -> User:
     """
     email = f"inactive_{uuid4().hex[:8]}@example.com"
     password_hash = hash_password("TestPass123!")
-    
+
     record = await db_connection.fetchrow(
         """
         INSERT INTO users (email, password_hash, is_active)
@@ -270,7 +280,7 @@ async def inactive_user(db_connection: Connection, clean_tables: None) -> User:
         password_hash,
         False,
     )
-    
+
     return User.from_record(record)
 
 
@@ -282,9 +292,9 @@ async def authenticated_client(
     Create an authenticated test client.
     """
     from httpx import ASGITransport
-    
+
     app.dependency_overrides[get_settings] = lambda: test_settings
-    
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
@@ -295,12 +305,12 @@ async def authenticated_client(
                 "grant_type": "password",
             },
         )
-        
+
         token_data = response.json()
         client.headers["Authorization"] = f"Bearer {token_data['access_token']}"
-        
+
         yield client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -312,13 +322,13 @@ async def unauthenticated_client(
     Create an unauthenticated test client.
     """
     from httpx import ASGITransport
-    
+
     app.dependency_overrides[get_settings] = lambda: test_settings
-    
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -327,15 +337,9 @@ def pytest_configure(config):
     """
     Register custom markers.
     """
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
     config.addinivalue_line(
         "markers", "requires_api_keys: mark test as requiring real API keys"
     )
@@ -347,6 +351,7 @@ def make_user_data():
     """
     Factory for creating user test data.
     """
+
     def _make_user_data(**kwargs):
         data = {
             "email": f"user_{uuid4().hex[:8]}@example.com",
@@ -354,7 +359,7 @@ def make_user_data():
         }
         data.update(kwargs)
         return data
-    
+
     return _make_user_data
 
 
@@ -364,7 +369,7 @@ def sample_embedding() -> list[float]:
     Generate a sample 1536-dimensional embedding.
     """
     import random
-    
+
     random.seed(42)  # Reproducible
     return [random.uniform(-1, 1) for _ in range(1536)]
 
@@ -375,8 +380,8 @@ def async_run():
     """
     Helper to run async functions in sync tests.
     """
+
     def _run(coro):
         return asyncio.get_event_loop().run_until_complete(coro)
-    
-    return _run
 
+    return _run

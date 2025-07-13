@@ -91,7 +91,7 @@ class DatabasePool:
         """
         async with self.acquire() as conn:
             try:
-                await conn.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+                await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
                 logger.info("uuid-ossp extension created successfully")
             except asyncpg.PostgresError as e:
                 raise RuntimeError(

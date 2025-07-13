@@ -76,7 +76,9 @@ class User(BaseModel):
         """
 
         try:
-            record = await database.db.fetchrow(query, email.lower(), password_hash, is_active)
+            record = await database.db.fetchrow(
+                query, email.lower(), password_hash, is_active
+            )
             return cls.from_record(record)
         except UniqueViolationError as e:
             raise ValueError(f"User with email {email} already exists") from e

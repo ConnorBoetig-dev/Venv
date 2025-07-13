@@ -176,9 +176,7 @@ class Settings(BaseSettings):
         env = info.data.get("environment")
         if not v and env not in ("development", "testing"):
             field_name = info.field_name
-            raise ValueError(
-                f"{field_name} is required in {env} environment"
-            )
+            raise ValueError(f"{field_name} is required in {env} environment")
         return v
 
     @property

@@ -41,9 +41,7 @@ class TestUserModel:
         assert user.password_hash == "hashed"
         assert user.is_active is False
 
-    async def test_create_user(
-        self, db_connection: Connection, clean_tables: None
-    ):
+    async def test_create_user(self, db_connection: Connection, clean_tables: None):
         """
         Test creating a new user.
         """
@@ -99,9 +97,7 @@ class TestUserModel:
                 password_hash="anotherhash",
             )
 
-    async def test_find_by_email(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_find_by_email(self, db_connection: Connection, test_user: User):
         """
         Test finding user by email.
         """
@@ -136,9 +132,7 @@ class TestUserModel:
         found = await User.find_active_by_email(inactive_user.email)
         assert found is None
 
-    async def test_get_all_active(
-        self, db_connection: Connection, clean_tables: None
-    ):
+    async def test_get_all_active(self, db_connection: Connection, clean_tables: None):
         """
         Test getting all active users.
         """
@@ -166,9 +160,7 @@ class TestUserModel:
         users_page2 = await User.get_all_active(limit=2, offset=2)
         assert len(users_page2) == 1
 
-    async def test_email_exists(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_email_exists(self, db_connection: Connection, test_user: User):
         """
         Test checking if email exists.
         """
@@ -184,9 +176,7 @@ class TestUserModel:
         exists = await User.email_exists("nonexistent@example.com")
         assert exists is False
 
-    async def test_update_password(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_update_password(self, db_connection: Connection, test_user: User):
         """
         Test updating user password.
         """
@@ -211,13 +201,11 @@ class TestUserModel:
         Test updating password on unsaved user raises error.
         """
         user = User(email="test@example.com", password_hash="hash")
-        
+
         with pytest.raises(ValueError, match="Cannot update password for unsaved user"):
             await user.update_password("newhash")
 
-    async def test_deactivate_user(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_deactivate_user(self, db_connection: Connection, test_user: User):
         """
         Test deactivating user account.
         """
@@ -276,9 +264,7 @@ class TestUserModel:
         result = user.to_dict(exclude=set())
         assert "password_hash" in result
 
-    async def test_save_new_user(
-        self, db_connection: Connection, clean_tables: None
-    ):
+    async def test_save_new_user(self, db_connection: Connection, clean_tables: None):
         """
         Test saving a new user.
         """
@@ -304,9 +290,7 @@ class TestUserModel:
         assert found is not None
         assert found["email"] == "savetest@example.com"
 
-    async def test_save_existing_user(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_save_existing_user(self, db_connection: Connection, test_user: User):
         """
         Test updating an existing user via save.
         """

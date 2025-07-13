@@ -7,8 +7,6 @@ and AI integration points.
 /backend/tests/unit/test_models_upload.py
 """
 
-from uuid import UUID
-
 import pytest
 from asyncpg import Connection
 
@@ -356,8 +354,8 @@ class TestUploadModel:
             # Update with embedding and mark as completed
             await db_connection.execute(
                 """
-                UPDATE uploads 
-                SET embedding = $1::vector, 
+                UPDATE uploads
+                SET embedding = $1::vector,
                     processing_status = $2,
                     gemini_summary = $3
                 WHERE id = $4
@@ -388,7 +386,6 @@ class TestUploadModel:
         assert upload.filename == "image0.jpg"
         assert score > 0.99  # Should be very close to 1.0
 
-
     async def test_upload_repr(self):
         """
         Test string representation of Upload.
@@ -397,7 +394,7 @@ class TestUploadModel:
             filename="vacation.jpg",
             processing_status=ProcessingStatus.COMPLETED,
         )
-        
+
         repr_str = str(upload)
         assert "Upload" in repr_str
         assert "vacation.jpg" in repr_str
@@ -414,10 +411,10 @@ class TestUploadModel:
         await Upload.create_embedding_index(lists=10)
 
         # Verify index exists (index name pattern)
-        exists = await db_connection.fetchval(
+        await db_connection.fetchval(
             """
             SELECT EXISTS (
-                SELECT 1 FROM pg_indexes 
+                SELECT 1 FROM pg_indexes
                 WHERE indexname LIKE 'idx_uploads_embedding_%'
             )
             """
@@ -447,7 +444,7 @@ class TestUploadModel:
         # Test update
         original_updated = upload.updated_at
         upload.filename = "renamed.jpg"
-        
+
         await upload.save()
         assert upload.updated_at > original_updated
 

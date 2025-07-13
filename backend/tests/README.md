@@ -128,10 +128,10 @@ class TestNewFeature:
         """Test that feature does X when Y."""
         # Arrange
         data = create_test_data()
-        
+
         # Act
         result = await feature_function(data)
-        
+
         # Assert
         assert result.status == "expected"
 ```
@@ -147,7 +147,7 @@ class TestNewEndpoint:
             "/api/endpoint",
             json={"key": "value"}
         )
-        
+
         assert response.status_code == 200
         assert response.json()["status"] == "success"
 ```

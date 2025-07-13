@@ -13,7 +13,6 @@ from uuid import UUID
 
 from asyncpg import Record
 
-from database import db
 import database
 
 T = TypeVar("T", bound="BaseModel")

@@ -35,13 +35,13 @@ class TestBaseModel:
         # Test with arguments
         test_id = UUID("550e8400-e29b-41d4-a716-446655440000")
         test_time = datetime.now()
-        
+
         model = BaseModel(
             id=test_id,
             created_at=test_time,
             updated_at=test_time,
         )
-        
+
         assert model.id == test_id
         assert model.created_at == test_time
         assert model.updated_at == test_time
@@ -62,7 +62,7 @@ class TestBaseModel:
 
         # Create a mock record (using dict as substitute)
         model = BaseModel(**record_data)
-        
+
         assert model.id == record_data["id"]
         assert model.created_at == record_data["created_at"]
         assert model.updated_at == record_data["updated_at"]
@@ -81,7 +81,7 @@ class TestBaseModel:
             None,
             {"id": UUID("660e8400-e29b-41d4-a716-446655440000")},
         ]
-        
+
         # Since we can't mock asyncpg Records easily, we'll test the logic
         assert len([r for r in record_data if r is not None]) == 2
 
@@ -91,16 +91,16 @@ class TestBaseModel:
         """
         test_id = UUID("550e8400-e29b-41d4-a716-446655440000")
         test_time = datetime.now()
-        
+
         model = BaseModel(
             id=test_id,
             created_at=test_time,
             updated_at=test_time,
         )
-        
+
         # Test basic serialization
         result = model.to_dict()
-        
+
         assert isinstance(result["id"], str)
         assert result["id"] == str(test_id)
         assert isinstance(result["created_at"], str)
@@ -108,7 +108,7 @@ class TestBaseModel:
 
         # Test with exclude
         result = model.to_dict(exclude={"created_at", "updated_at"})
-        
+
         assert "id" in result
         assert "created_at" not in result
         assert "updated_at" not in result
@@ -116,7 +116,7 @@ class TestBaseModel:
         # Test that private attributes are excluded
         model._private = "secret"
         result = model.to_dict()
-        
+
         assert "_private" not in result
 
     async def test_find_by_id_requires_table(
@@ -128,14 +128,14 @@ class TestBaseModel:
         # Using User as concrete implementation
         # This should create the table automatically
         result = await User.find_by_id(UUID("550e8400-e29b-41d4-a716-446655440000"))
-        
+
         assert result is None  # No user exists
 
         # Verify table was created
         exists = await db_connection.fetchval(
             """
             SELECT EXISTS (
-                SELECT 1 FROM information_schema.tables 
+                SELECT 1 FROM information_schema.tables
                 WHERE table_name = 'users'
             )
             """
@@ -150,14 +150,12 @@ class TestBaseModel:
         """
         # Find by string UUID
         found = await User.find_by_id(str(test_user.id))
-        
+
         assert found is not None
         assert found.id == test_user.id
         assert found.email == test_user.email
 
-    async def test_count(
-        self, db_connection: Connection, clean_tables: None
-    ):
+    async def test_count(self, db_connection: Connection, clean_tables: None):
         """
         Test counting records.
         """
@@ -215,9 +213,7 @@ class TestBaseModel:
         emails = [u.email for u in users]
         assert emails == sorted(emails)
 
-    async def test_delete(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_delete(self, db_connection: Connection, test_user: User):
         """
         Test deleting a record.
         """
@@ -268,7 +264,7 @@ class TestBaseModel:
         """
         # Reset the flag
         User.__table_created__ = False
-        
+
         # First call should create table
         await User.ensure_table_exists()
         assert User.__table_created__ is True
@@ -278,9 +274,7 @@ class TestBaseModel:
         await User.ensure_table_exists()
         assert User.__table_created__ is True
 
-    async def test_refresh(
-        self, db_connection: Connection, test_user: User
-    ):
+    async def test_refresh(self, db_connection: Connection, test_user: User):
         """
         Test refreshing model data from database.
         """
@@ -308,7 +302,7 @@ class TestBaseModel:
         Test refreshing unsaved model raises error.
         """
         model = User(email="test@example.com", password_hash="hash")
-        
+
         with pytest.raises(ValueError, match="Cannot refresh record without id"):
             await model.refresh()
 

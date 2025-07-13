@@ -116,6 +116,7 @@ ignore = [
     "PLR0911", # too many return statements
     "B008",   # do not perform function calls in argument defaults
     "ARG001", # unused function argument (FastAPI requires certain signatures)
+    "PLC0415", # import should be at top-level
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -142,8 +143,6 @@ addopts = [
     "--cov=.",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-report=xml",
     "--cov-fail-under=70",
 ]
 testpaths = ["tests"]

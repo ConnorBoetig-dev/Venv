@@ -230,6 +230,9 @@ help:
 	@echo "  \033[33mformat\033[0m       - Format both backend and frontend code."
 	@echo "  \033[33mlint\033[0m         - Lint both backend and frontend code."
 
+
+
+
 # --- Development environment ---
 dev:
 	$(call ASCII_DEV)

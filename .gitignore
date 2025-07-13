@@ -212,3 +212,5 @@ infra/prod/ssl/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+backend/PG_VENV.egg-info

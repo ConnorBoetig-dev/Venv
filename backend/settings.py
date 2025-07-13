@@ -11,15 +11,14 @@ from typing import Final
 from passlib.context import CryptContext
 
 # Password hashing configuration
-pwd_context = CryptContext(
-    schemes=["bcrypt"], 
-    deprecated="auto", 
-    bcrypt__rounds=14 
-)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=14)
 
 # Password validation constants
 MIN_PASSWORD_LENGTH: Final[int] = 8
-MAX_PASSWORD_LENGTH: Final[int] = 69 
+MAX_PASSWORD_LENGTH: Final[int] = 69
+
+# Embedding configuration
+EMBEDDING_DIMENSIONS: Final[int] = 1536  # OpenAI text-embedding-3-small dimensions
 
 # Special characters for password validation
 SPECIAL_CHARACTERS: Final[str] = "!@#$%^&*()_+-=[]{}|;:,.<>?"
@@ -45,5 +44,3 @@ SEARCH_RATE_LIMIT: Final[int] = 60  # 60 searches per minute per user
 # Processing queue settings
 PROCESSING_BATCH_SIZE: Final[int] = 5  # Process 5 uploads at a time
 PROCESSING_RETRY_ATTEMPTS: Final[int] = 3  # Retry failed processing 3 times
-
-

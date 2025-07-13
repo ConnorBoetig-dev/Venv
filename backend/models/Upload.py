@@ -7,12 +7,9 @@ Supports both images and videos with AI-generated summaries and embeddings.
 /backend/models/Upload.py
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
-
-from asyncpg import Record
 
 from database import db
 from models import BaseModel
@@ -22,17 +19,19 @@ class ProcessingStatus(str, Enum):
     """
     Processing status states for uploads.
     """
-    PENDING = "pending"           # Just uploaded, not processed
-    ANALYZING = "analyzing"       # Gemini is analyzing the media
-    EMBEDDING = "embedding"       # Creating embeddings with OpenAI
-    COMPLETED = "completed"       # Successfully processed
-    FAILED = "failed"            # Processing failed
+
+    PENDING = "pending"  # Just uploaded, not processed
+    ANALYZING = "analyzing"  # Gemini is analyzing the media
+    EMBEDDING = "embedding"  # Creating embeddings with OpenAI
+    COMPLETED = "completed"  # Successfully processed
+    FAILED = "failed"  # Processing failed
 
 
 class FileType(str, Enum):
     """
     Supported file types.
     """
+
     IMAGE = "image"
     VIDEO = "video"
 
@@ -40,7 +39,7 @@ class FileType(str, Enum):
 class Upload(BaseModel):
     """
     Upload model for media files.
-    
+
     Attributes:
         id: Unique identifier (UUID)
         user_id: Owner's user ID
@@ -58,73 +57,75 @@ class Upload(BaseModel):
         created_at: Upload timestamp
         updated_at: Last update timestamp
     """
-    
+
     __tablename__ = "uploads"
-    
+
     def __init__(self, **kwargs: Any) -> None:
         """
         Initialize upload instance.
         """
         super().__init__(**kwargs)
-        self.user_id: UUID = kwargs.get('user_id')
-        self.filename: str = kwargs.get('filename', '')
-        self.file_path: str = kwargs.get('file_path', '')
-        self.file_type: str = kwargs.get('file_type', '')
-        self.file_size: int = kwargs.get('file_size', 0)
-        self.mime_type: str = kwargs.get('mime_type', '')
-        self.processing_status: str = kwargs.get('processing_status', ProcessingStatus.PENDING)
-        self.gemini_summary: str | None = kwargs.get('gemini_summary')
-        self.embedding: list[float] | None = kwargs.get('embedding')
-        self.thumbnail_path: str | None = kwargs.get('thumbnail_path')
-        self.error_message: str | None = kwargs.get('error_message')
-        self.metadata: dict[str, Any] | None = kwargs.get('metadata')
-    
+        self.user_id: UUID = kwargs.get("user_id")
+        self.filename: str = kwargs.get("filename", "")
+        self.file_path: str = kwargs.get("file_path", "")
+        self.file_type: str = kwargs.get("file_type", "")
+        self.file_size: int = kwargs.get("file_size", 0)
+        self.mime_type: str = kwargs.get("mime_type", "")
+        self.processing_status: str = kwargs.get(
+            "processing_status", ProcessingStatus.PENDING
+        )
+        self.gemini_summary: str | None = kwargs.get("gemini_summary")
+        self.embedding: list[float] | None = kwargs.get("embedding")
+        self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
+        self.error_message: str | None = kwargs.get("error_message")
+        self.metadata: dict[str, Any] | None = kwargs.get("metadata")
+
     @classmethod
     async def create_table(cls) -> None:
         """
         Create uploads table with vector column and indexes.
         """
         await db.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-        
+
         query = """
             CREATE TABLE IF NOT EXISTS uploads (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                
+
                 -- File information
                 filename TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 file_type VARCHAR(20) NOT NULL CHECK (file_type IN ('image', 'video')),
                 file_size BIGINT NOT NULL,
                 mime_type VARCHAR(100) NOT NULL,
-                
+
                 -- Processing
                 processing_status VARCHAR(20) NOT NULL DEFAULT 'pending',
                 gemini_summary TEXT,
                 embedding vector(1536),
-                
+
                 -- Metadata
                 thumbnail_path TEXT,
                 error_message TEXT,
                 metadata JSONB,
-                
+
                 -- Timestamps
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             );
-            
+
             -- Indexes for performance
             CREATE INDEX IF NOT EXISTS idx_uploads_user_id ON uploads(user_id);
             CREATE INDEX IF NOT EXISTS idx_uploads_processing_status ON uploads(processing_status);
             CREATE INDEX IF NOT EXISTS idx_uploads_file_type ON uploads(file_type);
             CREATE INDEX IF NOT EXISTS idx_uploads_created_at ON uploads(created_at DESC);
         """
-        
+
         await db.execute(query)
-        
+
         # Create vector index for similarity search (after some data exists)
         # This is deferred until we have enough data for better index building
-    
+
     @classmethod
     async def create(
         cls,
@@ -134,11 +135,11 @@ class Upload(BaseModel):
         file_type: Literal["image", "video"],
         file_size: int,
         mime_type: str,
-        metadata: dict[str, Any] | None = None
-    ) -> 'Upload':
+        metadata: dict[str, Any] | None = None,
+    ) -> "Upload":
         """
         Create a new upload record.
-        
+
         Args:
             user_id: Owner's user ID
             filename: Original filename
@@ -147,12 +148,12 @@ class Upload(BaseModel):
             file_size: Size in bytes
             mime_type: MIME type
             metadata: Optional metadata
-            
+
         Returns:
             Created Upload instance
         """
         await cls.ensure_table_exists()
-        
+
         query = """
             INSERT INTO uploads (
                 user_id, filename, file_path, file_type,
@@ -161,15 +162,20 @@ class Upload(BaseModel):
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         """
-        
+
         record = await db.fetchrow(
             query,
-            user_id, filename, file_path, file_type,
-            file_size, mime_type, metadata
+            user_id,
+            filename,
+            file_path,
+            file_type,
+            file_size,
+            mime_type,
+            metadata,
         )
-        
+
         return cls.from_record(record)
-    
+
     @classmethod
     async def find_by_user(
         cls,
@@ -177,101 +183,101 @@ class Upload(BaseModel):
         limit: int = 20,
         offset: int = 0,
         file_type: str | None = None,
-        status: str | None = None
-    ) -> list['Upload']:
+        status: str | None = None,
+    ) -> list["Upload"]:
         """
         Find uploads by user with optional filters.
-        
+
         Args:
             user_id: User's ID
             limit: Maximum results
             offset: Skip N results
             file_type: Filter by file type
             status: Filter by processing status
-            
+
         Returns:
             List of Upload instances
         """
         await cls.ensure_table_exists()
-        
+
         conditions = ["user_id = $1"]
         params = [user_id]
         param_count = 1
-        
+
         if file_type:
             param_count += 1
             conditions.append(f"file_type = ${param_count}")
             params.append(file_type)
-        
+
         if status:
             param_count += 1
             conditions.append(f"processing_status = ${param_count}")
             params.append(status)
-        
+
         where_clause = " AND ".join(conditions)
-        
+
         query = f"""
             SELECT * FROM uploads
             WHERE {where_clause}
             ORDER BY created_at DESC
             LIMIT ${param_count + 1} OFFSET ${param_count + 2}
         """
-        
+
         params.extend([limit, offset])
         records = await db.fetch(query, *params)
         return cls.from_records(records)
-    
+
     @classmethod
     async def search_by_embedding(
         cls,
         query_embedding: list[float],
         user_id: UUID | None = None,
         limit: int = 20,
-        similarity_threshold: float = 0.0
-    ) -> list[tuple['Upload', float]]:
+        similarity_threshold: float = 0.0,
+    ) -> list[tuple["Upload", float]]:
         """
         Search uploads by vector similarity.
-        
+
         Args:
             query_embedding: 1536-dimensional query vector
             user_id: Optional filter by user
             limit: Maximum results
             similarity_threshold: Minimum similarity score (0-1)
-            
+
         Returns:
             List of (Upload, similarity_score) tuples
         """
         await cls.ensure_table_exists()
-        
+
         filters = {"processing_status": ProcessingStatus.COMPLETED}
         if user_id:
             filters["user_id"] = user_id
-        
+
         records = await db.vector_similarity_search(
             table_name=cls.__tablename__,
             embedding_column="embedding",
             query_embedding=query_embedding,
             limit=limit,
-            filters=filters
+            filters=filters,
         )
-        
+
         results = []
         for record in records:
             upload = cls.from_record(record)
-            similarity = record['similarity']
-            
+            similarity = record["similarity"]
+
             if similarity >= similarity_threshold:
                 results.append((upload, similarity))
-        
+
         return results
-    
+
     @classmethod
     async def create_embedding_index(cls, lists: int = 100) -> None:
         """
         Create IVFFlat index for vector similarity search.
-        
+
         Should be called after having at least 1000 uploads with embeddings.
-        
+
         Args:
             lists: Number of clusters for IVFFlat index
         """
@@ -279,9 +285,9 @@ class Upload(BaseModel):
             table_name=cls.__tablename__,
             embedding_column="embedding",
             index_type="ivfflat",
-            lists=lists
+            lists=lists,
         )
-    
+
     async def _insert(self) -> None:
         """
         Insert new upload record.
@@ -296,18 +302,26 @@ class Upload(BaseModel):
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
         """
-        
+
         record = await db.fetchrow(
             query,
-            self.user_id, self.filename, self.file_path, self.file_type,
-            self.file_size, self.mime_type, self.processing_status,
-            self.gemini_summary, self.embedding, self.thumbnail_path,
-            self.error_message, self.metadata
+            self.user_id,
+            self.filename,
+            self.file_path,
+            self.file_type,
+            self.file_size,
+            self.mime_type,
+            self.processing_status,
+            self.gemini_summary,
+            self.embedding,
+            self.thumbnail_path,
+            self.error_message,
+            self.metadata,
         )
-        
+
         for key, value in dict(record).items():
             setattr(self, key, value)
-    
+
     async def _update(self) -> None:
         """
         Update existing upload record.
@@ -329,34 +343,40 @@ class Upload(BaseModel):
             WHERE id = $12
             RETURNING *
         """
-        
+
         record = await db.fetchrow(
             query,
-            self.filename, self.file_path, self.file_type,
-            self.file_size, self.mime_type, self.processing_status,
-            self.gemini_summary, self.embedding, self.thumbnail_path,
-            self.error_message, self.metadata, self.id
+            self.filename,
+            self.file_path,
+            self.file_type,
+            self.file_size,
+            self.mime_type,
+            self.processing_status,
+            self.gemini_summary,
+            self.embedding,
+            self.thumbnail_path,
+            self.error_message,
+            self.metadata,
+            self.id,
         )
-        
+
         if record:
             for key, value in dict(record).items():
                 setattr(self, key, value)
-    
+
     async def update_status(
-        self,
-        status: ProcessingStatus,
-        error_message: str | None = None
+        self, status: ProcessingStatus, error_message: str | None = None
     ) -> None:
         """
         Update processing status.
-        
+
         Args:
             status: New processing status
             error_message: Error message if failed
         """
         if self.id is None:
             raise ValueError("Cannot update status for unsaved upload")
-        
+
         query = """
             UPDATE uploads
             SET processing_status = $1,
@@ -365,28 +385,26 @@ class Upload(BaseModel):
             WHERE id = $3
             RETURNING updated_at
         """
-        
+
         updated_at = await db.fetchval(query, status, error_message, self.id)
         if updated_at:
             self.processing_status = status
             self.error_message = error_message
             self.updated_at = updated_at
-    
+
     async def update_analysis(
-        self,
-        gemini_summary: str,
-        embedding: list[float]
+        self, gemini_summary: str, embedding: list[float]
     ) -> None:
         """
         Update with AI analysis results.
-        
+
         Args:
             gemini_summary: Text description from Gemini
             embedding: Vector embedding from OpenAI
         """
         if self.id is None:
             raise ValueError("Cannot update analysis for unsaved upload")
-        
+
         query = """
             UPDATE uploads
             SET gemini_summary = $1,
@@ -396,31 +414,27 @@ class Upload(BaseModel):
             WHERE id = $4
             RETURNING updated_at
         """
-        
+
         updated_at = await db.fetchval(
-            query,
-            gemini_summary,
-            embedding,
-            ProcessingStatus.COMPLETED,
-            self.id
+            query, gemini_summary, embedding, ProcessingStatus.COMPLETED, self.id
         )
-        
+
         if updated_at:
             self.gemini_summary = gemini_summary
             self.embedding = embedding
             self.processing_status = ProcessingStatus.COMPLETED
             self.updated_at = updated_at
-    
+
     async def update_thumbnail(self, thumbnail_path: str) -> None:
         """
         Update thumbnail path.
-        
+
         Args:
             thumbnail_path: Path to generated thumbnail
         """
         if self.id is None:
             raise ValueError("Cannot update thumbnail for unsaved upload")
-        
+
         query = """
             UPDATE uploads
             SET thumbnail_path = $1,
@@ -428,72 +442,70 @@ class Upload(BaseModel):
             WHERE id = $2
             RETURNING updated_at
         """
-        
+
         updated_at = await db.fetchval(query, thumbnail_path, self.id)
         if updated_at:
             self.thumbnail_path = thumbnail_path
             self.updated_at = updated_at
-    
+
     @classmethod
-    async def get_pending_uploads(cls, limit: int = 10) -> list['Upload']:
+    async def get_pending_uploads(cls, limit: int = 10) -> list["Upload"]:
         """
         Get uploads that need processing.
-        
+
         Args:
             limit: Maximum number to return
-            
+
         Returns:
             List of uploads with pending status
         """
         await cls.ensure_table_exists()
-        
+
         query = """
             SELECT * FROM uploads
             WHERE processing_status = $1
             ORDER BY created_at ASC
             LIMIT $2
         """
-        
+
         records = await db.fetch(query, ProcessingStatus.PENDING, limit)
         return cls.from_records(records)
-    
+
     @classmethod
     async def count_by_user(cls, user_id: UUID) -> dict[str, int]:
         """
         Get upload counts by status for a user.
         """
         await cls.ensure_table_exists()
-        
+
         query = """
             SELECT processing_status, COUNT(*) as count
             FROM uploads
             WHERE user_id = $1
             GROUP BY processing_status
         """
-        
+
         records = await db.fetch(query, user_id)
-        return {record['processing_status']: record['count'] for record in records}
-    
+        return {record["processing_status"]: record["count"] for record in records}
+
     def to_dict(self, exclude: set[str] | None = None) -> dict[str, Any]:
         """
         Convert to dictionary, handling embedding specially.
         """
         exclude = exclude or set()
-        
+
         # Get base dict
         result = super().to_dict(exclude)
-        
+
         # Don't include full embedding in API responses (too large)
-        if 'embedding' not in exclude and self.embedding:
-            result['has_embedding'] = True
-            result.pop('embedding', None)
-        
+        if "embedding" not in exclude and self.embedding:
+            result["has_embedding"] = True
+            result.pop("embedding", None)
+
         return result
-    
+
     def __repr__(self) -> str:
         """
         String representation of Upload.
         """
         return f"<Upload id={self.id} filename={self.filename} status={self.processing_status}>"
-
-

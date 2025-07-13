@@ -27,7 +27,6 @@ class StorageError(Exception):
     """
     Base exception for storage operations.
     """
-
     pass
 
 
@@ -35,7 +34,6 @@ class FileTooLargeError(StorageError):
     """
     Raised when uploaded file exceeds size limit.
     """
-
     pass
 
 
@@ -43,7 +41,6 @@ class UnsupportedFileTypeError(StorageError):
     """
     Raised when file type is not supported.
     """
-
     pass
 
 
@@ -54,7 +51,6 @@ class StorageService:
     Currently uses local filesystem but designed for easy migration
     to cloud storage services like S3 or Google Cloud Storage.
     """
-
     def __init__(self, base_path: Path | None = None):
         """
         Initialize storage service.

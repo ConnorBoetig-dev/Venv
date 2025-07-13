@@ -1,19 +1,37 @@
 """
 Services package for business logic.
+---
+/backend/services/__init__.py
 """
 
+from .ai_service import (
+    AIService,
+    AIServiceError,
+    GeminiError,
+    OpenAIError,
+    ai_service,
+)
 from .storage_service import (
-    StorageService,
-    StorageError,
     FileTooLargeError,
+    StorageError,
+    StorageService,
     UnsupportedFileTypeError,
     storage_service,
 )
 
 __all__ = [
+
+    # Storage Service
     "StorageService",
     "StorageError",
     "FileTooLargeError",
     "UnsupportedFileTypeError",
     "storage_service",
+
+    # AI Service
+    "AIService",
+    "AIServiceError",
+    "GeminiError",
+    "OpenAIError",
+    "ai_service",
 ]

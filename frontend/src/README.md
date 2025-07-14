@@ -321,3 +321,20 @@ border-radius: 12px;
 ---
 
 **Target Feeling**: Users should feel like they're using the future of photo organization - powerful, elegant, and almost magical in its simplicity.
+
+
+
+  📋 The Pattern:
+
+  ✅ Use CSS files for:
+  - Complex animations & keyframes (like landing page rotations, liquid
+  flows)
+  - Custom utility classes (like pgv-glass, auth-page-with-grid)
+  - Component-specific patterns that would be verbose in Tailwind
+
+  ✅ Use Tailwind for:
+  - Layout & spacing (flex, grid, p-8, gap-4)
+  - Colors & states (text-white, bg-black/30, hover:scale-105)
+  - Simple responsive design (md:grid-cols-2, lg:grid-cols-3)
+
+

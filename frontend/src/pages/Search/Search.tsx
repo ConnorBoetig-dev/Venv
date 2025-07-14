@@ -1,4 +1,4 @@
-import './Search.css'
+
 
 function Search() {
   return (

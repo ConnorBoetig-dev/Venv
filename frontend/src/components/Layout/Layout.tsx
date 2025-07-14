@@ -1,6 +1,16 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { 
+  PhotoIcon,
+  HomeIcon,
+  ArrowUpOnSquareIcon,
+  MagnifyingGlassIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon
+} from '@heroicons/react/24/outline'
 import './Layout.css'
 
 function Layout() {
@@ -15,86 +25,76 @@ function Layout() {
   }
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
-    { path: '/upload', label: 'Upload', icon: '📤' },
-    { path: '/search', label: 'Search', icon: '🔍' },
+    { path: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/upload', label: 'Upload', icon: ArrowUpOnSquareIcon },
+    { path: '/search', label: 'Search', icon: MagnifyingGlassIcon },
   ]
 
   return (
     <div className="layout">
-      <nav className="navbar">
+      <nav className="navbar pgv-glass">
         <div className="nav-container">
-          {/* Logo */}
+          {/* Logo with Glass Effect */}
           <div className="nav-brand">
-            <NavLink to="/dashboard" className="brand-link">
-              <span className="brand-icon">🖼️</span>
-              <span className="brand-text">PG-VENV</span>
+            <NavLink to="/dashboard" className="brand-link pgv-liquid-hover">
+              <PhotoIcon className="brand-icon w-8 h-8 text-white" />
+              <span className="brand-text font-semibold tracking-tight">PG-VENV</span>
             </NavLink>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation with Glass Pills */}
           <div className="nav-links desktop-only">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                  `nav-link pgv-glass transition-all duration-300 hover:scale-105 ${isActive ? 'nav-link-active border-accent-primary' : 'hover:bg-white/10'}`
                 }
               >
-                <span className="nav-icon">{item.icon}</span>
-                <span>{item.label}</span>
+                <item.icon className="nav-icon w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
               </NavLink>
             ))}
           </div>
 
-          {/* User Menu */}
+          {/* User Menu with Glass Effect */}
           <div className="nav-user">
             <button
-              className="user-menu-button"
+              className="user-menu-button pgv-glass hover:scale-105 transition-all duration-300 pgv-glow-on-hover"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               aria-label="User menu"
             >
-              <div className="user-avatar">
+              <div className="user-avatar w-10 h-10 rounded-full bg-gradient-to-br from-black to-gray-800 flex items-center justify-center text-white font-semibold">
                 {user?.email[0].toUpperCase()}
               </div>
-              <span className="user-email desktop-only">{user?.email}</span>
-              <svg
-                className="menu-chevron"
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <span className="user-email desktop-only text-sm font-medium">{user?.email}</span>
+              <ChevronDownIcon 
+                className={`menu-chevron w-5 h-5 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}
+              />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Glass Dropdown Menu */}
             {isUserMenuOpen && (
               <>
                 <div
-                  className="menu-overlay"
+                  className="menu-overlay fixed inset-0 z-10"
                   onClick={() => setIsUserMenuOpen(false)}
                 />
-                <div className="user-dropdown">
-                  <div className="dropdown-header">
+                <div className="user-dropdown pgv-glass-heavy absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg z-20 pgv-fade-in">
+                  <div className="dropdown-header p-4">
                     <div className="user-info">
-                      <p className="user-email-full">{user?.email}</p>
-                      <p className="user-id">ID: {user?.id.slice(0, 8)}...</p>
+                      <p className="user-email-full text-white font-medium">{user?.email}</p>
+                      <p className="user-id text-gray-400 text-sm">ID: {user?.id.slice(0, 8)}...</p>
                     </div>
                   </div>
-                  <div className="dropdown-divider" />
+                  <div className="dropdown-divider h-px bg-white/10" />
                   <button
-                    className="dropdown-item logout-button"
+                    className="dropdown-item logout-button w-full p-4 text-left hover:bg-white/10 transition-colors duration-200 flex items-center gap-3"
                     onClick={handleLogout}
                   >
-                    <span>🚪</span>
-                    <span>Logout</span>
+                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    <span className="font-medium">Logout</span>
                   </button>
                 </div>
               </>
@@ -107,20 +107,11 @@ function Layout() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Mobile menu"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              {isMobileMenuOpen ? (
-                <path d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path d="M3 12h18M3 6h18M3 18h18" />
-              )}
-            </svg>
+            {isMobileMenuOpen ? (
+              <XMarkIcon className="w-6 h-6" />
+            ) : (
+              <Bars3Icon className="w-6 h-6" />
+            )}
           </button>
         </div>
 
@@ -136,7 +127,7 @@ function Layout() {
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="nav-icon">{item.icon}</span>
+                <item.icon className="nav-icon w-5 h-5" />
                 <span>{item.label}</span>
               </NavLink>
             ))}

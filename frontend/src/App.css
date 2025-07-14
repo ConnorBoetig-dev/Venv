@@ -32,30 +32,30 @@ body {
 /* === DARK LIQUID GLASS VARIABLES === */
 :root {
   /* Primary Colors */
-  --pgv-base-black: #1B1B1B;           /* Pure matte charcoal background */
-  --pgv-accent-turquoise: #065465;      /* Rare highlights and focus states */
-  --pgv-accent-turquoise-light: #0A7A8F; /* Lighter variant for hovers */
-  --pgv-accent-turquoise-glow: rgba(6, 84, 101, 0.4); /* Glow effect */
+  --pgv-base-black: #0f0f0f;           /* Deep black background */
+  --pgv-accent-primary: #000000;        /* Pure black for highlights and focus states */
+  --pgv-accent-primary-light: #1a1a1a;  /* Lighter variant for hovers */
+  --pgv-accent-primary-glow: rgba(0, 0, 0, 0.6); /* Glow effect */
   
   /* Glass Elements */
-  --pgv-glass-overlay: rgba(255, 255, 255, 0.08);     /* Semi-transparent panels */
-  --pgv-glass-overlay-hover: rgba(255, 255, 255, 0.12); /* Hover state */
-  --pgv-glass-border: rgba(255, 255, 255, 0.12);      /* Subtle borders */
-  --pgv-glass-border-hover: rgba(255, 255, 255, 0.18); /* Hover borders */
+  --pgv-glass-overlay: rgba(0, 0, 0, 0.3);            /* Darker semi-transparent panels */
+  --pgv-glass-overlay-hover: rgba(0, 0, 0, 0.4);      /* Darker hover state */
+  --pgv-glass-border: rgba(255, 255, 255, 0.08);      /* More subtle borders */
+  --pgv-glass-border-hover: rgba(255, 255, 255, 0.12); /* Subtle hover borders */
   --pgv-glass-blur: 20px;                              /* Backdrop blur amount */
   --pgv-glass-blur-heavy: 30px;                        /* Heavy blur for modals */
   
   /* Text Colors */
   --pgv-text-primary: #FFFFFF;
-  --pgv-text-secondary: #B0B0B0;
-  --pgv-text-muted: #808080;
-  --pgv-text-inverse: #1B1B1B;
+  --pgv-text-secondary: #C0C0C0;
+  --pgv-text-muted: #909090;
+  --pgv-text-inverse: #0f0f0f;
   
   /* Depth & Shadows */
-  --pgv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --pgv-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --pgv-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --pgv-shadow-glow: 0 0 20px var(--pgv-accent-turquoise-glow);
+  --pgv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --pgv-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --pgv-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --pgv-shadow-glow: 0 0 20px var(--pgv-accent-primary-glow);
   
   /* Animation Timings - Liquid Flow */
   --pgv-transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -211,15 +211,15 @@ h6 { font-size: 0.875rem; }
 }
 
 .pgv-button-primary {
-  background: var(--pgv-accent-turquoise);
+  background: var(--pgv-accent-primary);
   color: var(--pgv-text-primary);
-  box-shadow: 0 2px 8px rgba(6, 84, 101, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .pgv-button-primary:hover {
-  background: var(--pgv-accent-turquoise-light);
+  background: var(--pgv-accent-primary-light);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(6, 84, 101, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .pgv-button-glass {
@@ -231,7 +231,7 @@ h6 { font-size: 0.875rem; }
 
 .pgv-button-glass:hover {
   background: var(--pgv-glass-overlay-hover);
-  border-color: var(--pgv-accent-turquoise);
+  border-color: var(--pgv-accent-primary);
   box-shadow: var(--pgv-shadow-glow);
 }
 
@@ -250,8 +250,8 @@ h6 { font-size: 0.875rem; }
 .pgv-input:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.05);
-  border-color: var(--pgv-accent-turquoise);
-  box-shadow: 0 0 0 3px rgba(6, 84, 101, 0.2);
+  border-color: var(--pgv-accent-primary);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
 }
 
 .pgv-input::placeholder {
@@ -296,13 +296,13 @@ h6 { font-size: 0.875rem; }
 
 /* === SELECTION === */
 ::selection {
-  background: var(--pgv-accent-turquoise);
+  background: var(--pgv-accent-primary);
   color: var(--pgv-text-primary);
 }
 
 /* === FOCUS VISIBLE === */
 :focus-visible {
-  outline: 2px solid var(--pgv-accent-turquoise);
+  outline: 2px solid var(--pgv-accent-primary);
   outline-offset: 2px;
 }
 
@@ -323,8 +323,8 @@ h6 { font-size: 0.875rem; }
   bottom: 0;
   background: radial-gradient(
     circle at 20% 50%,
-    rgba(6, 84, 101, 0.05) 0%,
-    transparent 50%
+    rgba(255, 255, 255, 0.02) 0%,
+    transparent 40%
   );
   pointer-events: none;
   z-index: 0;

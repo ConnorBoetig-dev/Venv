@@ -137,11 +137,11 @@
   opacity: 1;
 }
 
-/* Active link with turquoise accent */
+/* Active link with black accent */
 .nav-link-active {
   color: var(--pgv-text-primary);
-  background: rgba(6, 84, 101, 0.15);
-  border: 1px solid rgba(6, 84, 101, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
 
 .nav-link-active::after {
@@ -152,8 +152,8 @@
   transform: translateX(-50%);
   width: 30%;
   height: 2px;
-  background: var(--pgv-accent-turquoise);
-  box-shadow: 0 0 10px var(--pgv-accent-turquoise-glow);
+  background: var(--pgv-accent-primary);
+  box-shadow: 0 0 10px var(--pgv-accent-primary-glow);
 }
 
 .nav-icon {
@@ -187,7 +187,7 @@
 
 .user-menu-button:hover {
   background: var(--pgv-glass-overlay-hover);
-  border-color: var(--pgv-accent-turquoise);
+  border-color: var(--pgv-accent-primary);
   transform: translateY(-1px);
   box-shadow: var(--pgv-shadow-glow);
 }
@@ -196,20 +196,20 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--pgv-accent-turquoise), var(--pgv-accent-turquoise-light));
+  background: linear-gradient(135deg, var(--pgv-accent-primary), var(--pgv-accent-primary-light));
   color: var(--pgv-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 1.125rem;
-  box-shadow: 0 2px 8px rgba(6, 84, 101, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   transition: all var(--pgv-transition-base);
 }
 
 .user-menu-button:hover .user-avatar {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(6, 84, 101, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .user-email {
@@ -317,7 +317,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--pgv-accent-turquoise);
+  background: var(--pgv-accent-primary);
   opacity: 0;
   transition: opacity var(--pgv-transition-fast);
 }
@@ -336,7 +336,7 @@
 }
 
 .logout-button:hover {
-  color: var(--pgv-accent-turquoise-light);
+  color: var(--pgv-accent-primary-light);
 }
 
 /* === MOBILE MENU === */
@@ -353,7 +353,7 @@
 
 .mobile-menu-button:hover {
   background: var(--pgv-glass-overlay-hover);
-  border-color: var(--pgv-accent-turquoise);
+  border-color: var(--pgv-accent-primary);
 }
 
 .mobile-nav {
@@ -401,7 +401,7 @@
   transform: translateY(-50%);
   width: 3px;
   height: 0;
-  background: var(--pgv-accent-turquoise);
+  background: var(--pgv-accent-primary);
   transition: height var(--pgv-transition-fast);
 }
 
@@ -416,7 +416,7 @@
 }
 
 .mobile-nav-link-active {
-  background: rgba(6, 84, 101, 0.15);
+  background: rgba(0, 0, 0, 0.3);
   color: var(--pgv-text-primary);
 }
 

@@ -22,8 +22,9 @@
   height: 200%;
   background: radial-gradient(
     circle at 20% 50%,
-    rgba(6, 84, 101, 0.15) 0%,
-    transparent 40%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(6, 84, 101, 0.05) 30%,
+    transparent 50%
   );
   animation: pgv-gradient-rotate 20s linear infinite;
 }
@@ -37,8 +38,9 @@
   height: 200%;
   background: radial-gradient(
     circle at 80% 50%,
-    rgba(6, 84, 101, 0.1) 0%,
-    transparent 40%
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(6, 84, 101, 0.03) 25%,
+    transparent 45%
   );
   animation: pgv-gradient-rotate 30s linear infinite reverse;
 }
@@ -139,10 +141,10 @@
 }
 
 .btn-primary {
-  background: var(--pgv-accent-turquoise);
+  background: #000000;
   color: var(--pgv-text-primary);
   box-shadow: 
-    0 4px 20px rgba(6, 84, 101, 0.3),
+    0 4px 20px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
@@ -163,10 +165,10 @@
 }
 
 .btn-primary:hover {
-  background: var(--pgv-accent-turquoise-light);
+  background: #1a1a1a;
   transform: translateY(-3px);
   box-shadow: 
-    0 8px 30px rgba(6, 84, 101, 0.4),
+    0 8px 30px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -178,17 +180,17 @@
   background: var(--pgv-glass-overlay);
   backdrop-filter: blur(var(--pgv-glass-blur));
   color: var(--pgv-text-primary);
-  border: 2px solid var(--pgv-accent-turquoise);
+  border: 2px solid #000000;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary:hover {
-  background: rgba(6, 84, 101, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-3px);
-  border-color: var(--pgv-accent-turquoise-light);
+  border-color: #1a1a1a;
   box-shadow: 
     0 8px 30px rgba(0, 0, 0, 0.3),
-    0 0 30px rgba(6, 84, 101, 0.2);
+    0 0 30px rgba(255, 255, 255, 0.1);
 }
 
 /* Feature cards */
@@ -225,7 +227,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--pgv-accent-turquoise) 50%,
+    rgba(255, 255, 255, 0.4) 50%,
     transparent 100%
   );
   transform: translateX(-100%);
@@ -234,7 +236,7 @@
 
 .feature-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(6, 84, 101, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -280,7 +282,7 @@
   position: absolute;
   width: 4px;
   height: 4px;
-  background: var(--pgv-accent-turquoise);
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   opacity: 0.3;
   animation: pgv-particle-float 20s linear infinite;

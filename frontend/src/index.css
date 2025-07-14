@@ -33,20 +33,20 @@
   
   /* Text glow effect */
   .text-glow {
-    text-shadow: 0 0 20px var(--pgv-accent-turquoise-glow);
+    text-shadow: 0 0 20px var(--pgv-accent-primary-glow);
   }
   
-  /* Turquoise accent utilities */
-  .accent-turquoise {
-    color: var(--pgv-accent-turquoise);
+  /* Primary accent utilities */
+  .accent-primary {
+    color: var(--pgv-accent-primary);
   }
   
-  .bg-accent-turquoise {
-    background-color: var(--pgv-accent-turquoise);
+  .bg-accent-primary {
+    background-color: var(--pgv-accent-primary);
   }
   
-  .border-accent-turquoise {
-    border-color: var(--pgv-accent-turquoise);
+  .border-accent-primary {
+    border-color: var(--pgv-accent-primary);
   }
 }
 

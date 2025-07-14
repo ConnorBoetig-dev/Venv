@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { PhotoIcon, EyeIcon, EyeSlashIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import './Login.css'
 
 function Login() {
@@ -33,50 +34,49 @@ function Login() {
   const message = location.state?.message
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-card">
+    <div className="auth-page-with-grid min-h-screen flex items-center justify-center bg-gray-950 px-4">
+      <div className="w-full max-w-md">
+        <div className="pgv-glass p-8 rounded-2xl space-y-6">
           {/* Logo */}
-          <div className="auth-logo">
-            <span className="logo-icon">🖼️</span>
-            <h1 className="logo-text">PG-VENV</h1>
+          <div className="text-center">
+            <PhotoIcon className="w-12 h-12 mx-auto text-white mb-4" />
+            <h1 className="text-2xl font-bold text-white">PG-VENV</h1>
           </div>
 
           {/* Title */}
-          <div className="auth-header">
-            <h2 className="auth-title">Welcome back</h2>
-            <p className="auth-subtitle">Sign in to your account</p>
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-white mb-2">Welcome back</h2>
           </div>
 
           {/* Success message */}
           {message && (
-            <div className="alert alert-success">
-              <span>✅</span>
-              <span>{message}</span>
+            <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+              <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+              <span className="text-green-100 text-sm">{message}</span>
             </div>
           )}
 
           {/* Error message */}
           {loginError && (
-            <div className="alert alert-error">
-              <span>❌</span>
-              <span>
+            <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <ExclamationCircleIcon className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <span className="text-red-100 text-sm">
                 {loginError.response?.data?.detail || 'Login failed. Please try again.'}
               </span>
             </div>
           )}
 
           {/* Form */}
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-white">
                 Email address
               </label>
               <input
                 type="email"
                 id="email"
                 name="email"
-                className="form-input"
+                className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/30 focus:bg-black/50 transition-all duration-200"
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={handleInputChange}
@@ -85,16 +85,16 @@ function Login() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-white">
                 Password
               </label>
-              <div className="password-input-wrapper">
+              <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
-                  className="form-input"
+                  className="w-full px-4 py-3 pr-12 bg-black/30 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/30 focus:bg-black/50 transition-all duration-200"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleInputChange}
@@ -103,25 +103,29 @@ function Login() {
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {showPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="submit-button"
+              className="w-full py-3 px-4 bg-black text-white font-medium rounded-xl hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 mt-6"
               disabled={isLoggingIn}
             >
               {isLoggingIn ? (
-                <>
-                  <span className="button-spinner"></span>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                   <span>Signing in...</span>
-                </>
+                </div>
               ) : (
                 'Sign in'
               )}
@@ -129,29 +133,13 @@ function Login() {
           </form>
 
           {/* Footer */}
-          <div className="auth-footer">
-            <p className="footer-text">
+          <div className="text-center pt-4">
+            <p className="text-sm text-gray-300">
               Don't have an account?{' '}
-              <Link to="/register" className="footer-link">
+              <Link to="/register" className="text-white font-medium hover:text-gray-300 transition-colors duration-200">
                 Sign up
               </Link>
             </p>
-          </div>
-        </div>
-
-        {/* Feature highlight */}
-        <div className="auth-feature">
-          <div className="feature-content">
-            <h3 className="feature-title">Smart Media Search</h3>
-            <p className="feature-description">
-              Upload your photos and videos, then search them using natural language.
-              Our AI understands what's in your media, making finding memories effortless.
-            </p>
-            <div className="feature-examples">
-              <span className="example-chip">🏖️ "beach sunset"</span>
-              <span className="example-chip">🎂 "birthday party"</span>
-              <span className="example-chip">🐱 "funny cat video"</span>
-            </div>
           </div>
         </div>
       </div>

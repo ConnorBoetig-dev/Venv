@@ -19,7 +19,7 @@ class LoginRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
         json_schema_extra={
             "example": {"email": "user@example.com", "password": "MyStr0ng!Pass123"}
@@ -40,7 +40,7 @@ class TokenResponse(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         json_schema_extra={
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIs...",
@@ -63,7 +63,7 @@ class RefreshRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
         json_schema_extra={"example": {"refresh_token": "eyJhbGciOiJIUzI1NiIs..."}},
     )
@@ -77,7 +77,7 @@ class PasswordResetRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
     )
 
@@ -90,7 +90,7 @@ class PasswordResetConfirm(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
     )
 

@@ -102,18 +102,36 @@ export const useAuth = () => {
 
   // Auto-refresh logic
   const setupTokenRefresh = () => {
-    const refreshTokenValue = localStorage.getItem('refresh_token')
-    if (!refreshTokenValue) return
+    // Check token expiry and refresh if needed
+    const checkAndRefresh = async () => {
+      const refreshTokenValue = localStorage.getItem('refresh_token')
+      const accessToken = localStorage.getItem('access_token')
+      
+      if (!refreshTokenValue || !accessToken) return
 
-    // Refresh token 5 minutes before expiry
-    const refreshInterval = setInterval(async () => {
       try {
-        await refreshToken.mutateAsync({ refresh_token: refreshTokenValue })
+        // Decode token to check expiry (without verification since we just need the exp claim)
+        const payload = JSON.parse(atob(accessToken.split('.')[1]))
+        const expiresAt = payload.exp * 1000 // Convert to milliseconds
+        const now = Date.now()
+        const timeUntilExpiry = expiresAt - now
+        
+        // Refresh if less than 5 minutes until expiry
+        if (timeUntilExpiry < 5 * 60 * 1000) {
+          console.log('Access token expiring soon, refreshing...')
+          await refreshToken.mutateAsync({ refresh_token: refreshTokenValue })
+        }
       } catch (error) {
-        console.error('Token refresh failed:', error)
-        logout()
+        console.error('Token check/refresh failed:', error)
+        // Don't logout on decode error, just skip this check
       }
-    }, 25 * 60 * 1000) // 25 minutes
+    }
+
+    // Check immediately on setup
+    checkAndRefresh()
+
+    // Then check every minute
+    const refreshInterval = setInterval(checkAndRefresh, 60 * 1000) // 1 minute
 
     return () => clearInterval(refreshInterval)
   }

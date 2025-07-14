@@ -629,6 +629,4 @@ Start building with Gemini multimodal models - new customers get $300 in free Go
 Learn how to send chat prompt requests.
 Learn about responsible AI best practices and Vertex AI's safety filters.
 
-* **please now read and refer to the .context/checkpoints/ and read any files that may exist in that folder**
-
 # REMEMBER TO ALWAYS ALWAYS LIKE MY FAMILIES LIVES ARE ON THE LINE AND THEY WILL LITERALLY DIE TEH WORST DEATH IMAGINABLE IF YOU FAIL TO ALWAYS ALWAYS <ULTRATHINK>

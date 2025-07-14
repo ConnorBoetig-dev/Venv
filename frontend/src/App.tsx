@@ -1,34 +1,98 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
+import Layout from '@/components/Layout/Layout'
+import Home from '@/pages/Home/Home'
+import Login from '@/pages/Login/Login'
+import Register from '@/pages/Register/Register'
+import Dashboard from '@/pages/Dashboard/Dashboard'
+import Upload from '@/pages/Upload/Upload'
+import NotFound from '@/pages/NotFound/NotFound'
 import './App.css'
 
+// Protected route wrapper
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoadingUser } = useAuth()
+  const location = useLocation()
+
+  if (isLoadingUser) {
+    return (
+      <div className="pgv-loading-container">
+        <div className="pgv-loading-spinner"></div>
+        <p className="pgv-loading-text">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    // Redirect to login but save the attempted location
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return <>{children}</>
+}
+
+// Public route wrapper (redirects to dashboard if already authenticated)
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  
+  if (isAuthenticated) {
+    // Get the page they were trying to visit or default to dashboard
+    const from = location.state?.from?.pathname || '/dashboard'
+    return <Navigate to={from} replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const { setupTokenRefresh } = useAuth()
+
+  // Set up token auto-refresh
+  useEffect(() => {
+    const cleanup = setupTokenRefresh()
+    return cleanup
+  }, [setupTokenRefresh])
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="app">
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+
+        {/* Protected routes with layout */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upload" element={<Upload />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
   )
 }
 

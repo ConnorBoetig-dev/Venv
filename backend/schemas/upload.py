@@ -27,7 +27,7 @@ class UploadResponse(TimestampMixin):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP flexibility
         from_attributes=True,
         json_schema_extra={
             "example": {
@@ -68,6 +68,9 @@ class UploadResponse(TimestampMixin):
         description="1536-dimensional embedding vector from OpenAI",
         min_length=1536,
         max_length=1536,
+    )
+    has_embedding: bool = Field(
+        default=False, description="Whether this upload has an embedding generated"
     )
     thumbnail_path: str | None = Field(
         default=None, description="Path to generated thumbnail"
@@ -115,7 +118,7 @@ class UploadStats(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP flexibility
     )
 
     total_count: int = Field(ge=0, description="Total uploads")
@@ -140,7 +143,7 @@ class BulkUploadResponse(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP flexibility
     )
 
     successful: list[UploadResponse] = Field(description="Successfully created uploads")

@@ -27,7 +27,7 @@ class SearchRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
         json_schema_extra={
             "example": {
@@ -53,7 +53,7 @@ class SearchRequest(BaseModel):
     )
 
     similarity_threshold: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="Minimum similarity score (0-1)"
+        default=0.25, ge=0.0, le=1.0, description="Minimum similarity score (0-1)"
     )
 
     file_types: list[Literal["image", "video"]] | None = Field(
@@ -106,7 +106,7 @@ class SearchResult(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         from_attributes=True,
     )
 
@@ -126,7 +126,7 @@ class SearchResponse(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         json_schema_extra={
             "example": {
                 "results": [
@@ -177,7 +177,7 @@ class SimilarUploadsRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
     )
 
     upload_id: UUID = Field(description="Upload ID to find similar items for")
@@ -201,7 +201,7 @@ class SearchHistoryItem(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         from_attributes=True,
     )
 

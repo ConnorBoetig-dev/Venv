@@ -7,12 +7,16 @@ Supports both images and videos with AI-generated summaries and embeddings.
 /backend/models/Upload.py
 """
 
+import json
+import logging
 from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
 import database
 from models import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessingStatus(str, Enum):
@@ -75,10 +79,33 @@ class Upload(BaseModel):
             "processing_status", ProcessingStatus.PENDING
         )
         self.gemini_summary: str | None = kwargs.get("gemini_summary")
-        self.embedding: list[float] | None = kwargs.get("embedding")
+
+        # Handle embedding - could be string from database or list from API
+        embedding_raw = kwargs.get("embedding")
+        if isinstance(embedding_raw, str):
+            # Parse string format from database: "[0.1,0.2,0.3]"
+            try:
+                if embedding_raw.startswith("[") and embedding_raw.endswith("]"):
+                    self.embedding = list(map(float, embedding_raw[1:-1].split(",")))
+                else:
+                    self.embedding = None
+            except (ValueError, AttributeError):
+                self.embedding = None
+        else:
+            self.embedding = embedding_raw
+
         self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
         self.error_message: str | None = kwargs.get("error_message")
-        self.metadata: dict[str, Any] | None = kwargs.get("metadata")
+
+        # Handle metadata - could be dict or JSON string from database
+        metadata = kwargs.get("metadata")
+        if isinstance(metadata, str):
+            try:
+                self.metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                self.metadata = None
+        else:
+            self.metadata = metadata
 
     @classmethod
     async def create_table(cls) -> None:
@@ -136,6 +163,7 @@ class Upload(BaseModel):
         file_size: int,
         mime_type: str,
         metadata: dict[str, Any] | None = None,
+        upload_id: UUID | None = None,
     ) -> "Upload":
         """
         Create a new upload record.
@@ -154,25 +182,45 @@ class Upload(BaseModel):
         """
         await cls.ensure_table_exists()
 
-        query = """
-            INSERT INTO uploads (
-                user_id, filename, file_path, file_type,
-                file_size, mime_type, metadata
+        if upload_id:
+            query = """
+                INSERT INTO uploads (
+                    id, user_id, filename, file_path, file_type,
+                    file_size, mime_type, metadata
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING *
+            """
+            record = await database.db.fetchrow(
+                query,
+                upload_id,
+                user_id,
+                filename,
+                file_path,
+                file_type,
+                file_size,
+                mime_type,
+                json.dumps(metadata) if metadata is not None else None,
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *
-        """
-
-        record = await database.db.fetchrow(
-            query,
-            user_id,
-            filename,
-            file_path,
-            file_type,
-            file_size,
-            mime_type,
-            metadata,
-        )
+        else:
+            query = """
+                INSERT INTO uploads (
+                    user_id, filename, file_path, file_type,
+                    file_size, mime_type, metadata
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *
+            """
+            record = await database.db.fetchrow(
+                query,
+                user_id,
+                filename,
+                file_path,
+                file_type,
+                file_size,
+                mime_type,
+                json.dumps(metadata) if metadata is not None else None,
+            )
 
         return cls.from_record(record)
 
@@ -299,7 +347,7 @@ class Upload(BaseModel):
                 gemini_summary, embedding, thumbnail_path,
                 error_message, metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::vector, $10, $11, $12)
             RETURNING *
         """
 
@@ -316,7 +364,7 @@ class Upload(BaseModel):
             self.embedding,
             self.thumbnail_path,
             self.error_message,
-            self.metadata,
+            json.dumps(self.metadata) if self.metadata is not None else None,
         )
 
         for key, value in dict(record).items():
@@ -335,7 +383,7 @@ class Upload(BaseModel):
                 mime_type = $5,
                 processing_status = $6,
                 gemini_summary = $7,
-                embedding = $8,
+                embedding = $8::vector,
                 thumbnail_path = $9,
                 error_message = $10,
                 metadata = $11,
@@ -356,7 +404,7 @@ class Upload(BaseModel):
             self.embedding,
             self.thumbnail_path,
             self.error_message,
-            self.metadata,
+            json.dumps(self.metadata) if self.metadata is not None else None,
             self.id,
         )
 
@@ -405,10 +453,13 @@ class Upload(BaseModel):
         if self.id is None:
             raise ValueError("Cannot update analysis for unsaved upload")
 
+        # Pass the embedding list directly to PostgreSQL
+        logger.info(f"DEBUG: Passing embedding directly as list, length: {len(embedding) if embedding else 'None'}")
+
         query = """
             UPDATE uploads
             SET gemini_summary = $1,
-                embedding = $2,
+                embedding = $2::vector,
                 processing_status = $3,
                 updated_at = NOW()
             WHERE id = $4

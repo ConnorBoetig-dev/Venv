@@ -62,7 +62,7 @@ A smart camera roll application that revolutionizes how users search through the
    ```
 
 3. **Configure API keys**
-   Edit `infra/dev/env/.env.dev` and add your API keys:
+   Create `infra/dev/env/.env.dev` from `.env.example` and add your API keys:
    ```env
    OPENAI_API_KEY="your-openai-key"
    GEMINI_API_KEY="your-gemini-key"
@@ -74,8 +74,7 @@ A smart camera roll application that revolutionizes how users search through the
    ```
 
 5. **Access the application**
-   - Frontend: http://localhost:3000
-   - API Docs: http://localhost:8000/docs
+   - Full Application: http://localhost/
 
 ## Available Commands
 

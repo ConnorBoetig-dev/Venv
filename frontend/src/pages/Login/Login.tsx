@@ -40,7 +40,7 @@ function Login() {
           {/* Logo */}
           <div className="text-center">
             <PhotoIcon className="w-12 h-12 mx-auto text-white mb-4" />
-            <h1 className="text-2xl font-display font-bold text-white tracking-tighter">PG-VENV</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-tighter">VueMantic</h1>
           </div>
 
           {/* Title */}

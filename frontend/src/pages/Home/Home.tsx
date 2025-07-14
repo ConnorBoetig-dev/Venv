@@ -5,7 +5,7 @@ function Home() {
   return (
     <div className="home-page">
       <div className="hero">
-        <h1 className="font-display">Welcome to PG-VENV</h1>
+        <h1 className="font-display">Welcome to VueMantic</h1>
         <p>Smart media search powered by AI</p>
         <div className="hero-actions">
           <Link to="/login" className="btn btn-primary">Get Started</Link>

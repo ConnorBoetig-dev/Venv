@@ -38,7 +38,7 @@ function Layout() {
           <div className="nav-brand">
             <NavLink to="/dashboard" className="brand-link pgv-liquid-hover">
               <PhotoIcon className="brand-icon w-8 h-8 text-white" />
-              <span className="brand-text font-display font-bold tracking-tighter text-lg">PG-VENV</span>
+              <span className="brand-text font-display font-bold tracking-tighter text-lg">VueMantic</span>
             </NavLink>
           </div>
 

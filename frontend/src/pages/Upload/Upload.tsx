@@ -32,7 +32,7 @@ function Upload() {
           Upload Media
         </h1>
         <p className="upload-description text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-          Upload your photos and videos to make them searchable with AI-powered semantic search
+          Upload your photos and videos to make them searchable with AI vector semantic search
         </p>
       </div>
 

@@ -7,6 +7,7 @@ Supports both images and videos with AI-generated summaries and embeddings.
 /backend/models/Upload.py
 """
 
+import json
 from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
@@ -78,7 +79,16 @@ class Upload(BaseModel):
         self.embedding: list[float] | None = kwargs.get("embedding")
         self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
         self.error_message: str | None = kwargs.get("error_message")
-        self.metadata: dict[str, Any] | None = kwargs.get("metadata")
+        
+        # Handle metadata - could be dict or JSON string from database
+        metadata = kwargs.get("metadata")
+        if isinstance(metadata, str):
+            try:
+                self.metadata = json.loads(metadata)
+            except (json.JSONDecodeError, TypeError):
+                self.metadata = None
+        else:
+            self.metadata = metadata
 
     @classmethod
     async def create_table(cls) -> None:
@@ -136,6 +146,7 @@ class Upload(BaseModel):
         file_size: int,
         mime_type: str,
         metadata: dict[str, Any] | None = None,
+        upload_id: UUID | None = None,
     ) -> "Upload":
         """
         Create a new upload record.
@@ -171,7 +182,7 @@ class Upload(BaseModel):
             file_type,
             file_size,
             mime_type,
-            metadata,
+            json.dumps(metadata) if metadata is not None else None,
         )
 
         return cls.from_record(record)
@@ -316,7 +327,7 @@ class Upload(BaseModel):
             self.embedding,
             self.thumbnail_path,
             self.error_message,
-            self.metadata,
+            json.dumps(self.metadata) if self.metadata is not None else None,
         )
 
         for key, value in dict(record).items():
@@ -356,7 +367,7 @@ class Upload(BaseModel):
             self.embedding,
             self.thumbnail_path,
             self.error_message,
-            self.metadata,
+            json.dumps(self.metadata) if self.metadata is not None else None,
             self.id,
         )
 

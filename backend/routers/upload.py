@@ -175,7 +175,7 @@ async def upload_file(
         # Queue background processing (fire and forget)
         task = asyncio.create_task(
             process_upload_background(
-                upload_id=upload.id,
+                upload_id=upload_id,
                 user_id=current_user.id,
                 file_type=file_type,
                 extension=extension,

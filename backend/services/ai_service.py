@@ -276,12 +276,14 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
 
             # Use asyncio to run in executor since SDK might not be fully async
             loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                self._ensure_gemini_client().models.generate_content,
-                self._gemini_model,
-                contents,
-            )
+            
+            def call_gemini():
+                return self._ensure_gemini_client().models.generate_content(
+                    model=self._gemini_model,
+                    contents=contents
+                )
+            
+            response = await loop.run_in_executor(None, call_gemini)
 
             if not response.text:
                 raise GeminiError("Empty response from Gemini")

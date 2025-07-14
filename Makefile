@@ -240,7 +240,7 @@ help:
 dev:
 	$(call ASCII_DEV)
 	@echo "\033[32m Starting development environment...\033[0m"
-	@docker-compose -f infra/dev/docker-compose.yml up --build -d
+	@docker compose -f infra/dev/docker-compose.yml up --build -d
 	@echo "\033[32m Development environment started! Run 'make logs' to see logs.\033[0m"
 	$(call ASCII_DEV)
 
@@ -248,7 +248,7 @@ dev:
 prod:
 	$(call ASCII_PROD)
 	@echo "\033[36mStarting production environment...\033[0m"
-	@docker-compose -f infra/prod/docker-compose.yml up --build -d
+	@docker compose -f infra/prod/docker-compose.yml up --build -d
 	@echo "\033[36m Production environment started! Run 'make logs' to see logs.\033[0m"
 	$(call ASCII_PROD)
 
@@ -257,10 +257,10 @@ down:
 	$(call ASCII_DOWN)
 	@echo "\033[31m Stopping all containers...\033[0m"
 	@if [ -f infra/dev/docker-compose.yml ]; then \
-		docker-compose -f infra/dev/docker-compose.yml down; \
+		docker compose -f infra/dev/docker-compose.yml down; \
 	fi
 	@if [ -f infra/prod/docker-compose.yml ]; then \
-		docker-compose -f infra/prod/docker-compose.yml down; \
+		docker compose -f infra/prod/docker-compose.yml down; \
 	fi
 	@echo "\033[31m✅ All containers stopped.\033[0m"
 	$(call ASCII_DOWN)
@@ -269,10 +269,10 @@ down:
 logs:
 	$(call ASCII_LOGS)
 	@echo "\033[34m Following container logs (Ctrl+C to exit)...\033[0m"
-	@if [ -f infra/dev/docker-compose.yml ] && docker-compose -f infra/dev/docker-compose.yml ps -q | grep -q .; then \
-		docker-compose -f infra/dev/docker-compose.yml logs -f; \
-	elif [ -f infra/prod/docker-compose.yml ] && docker-compose -f infra/prod/docker-compose.yml ps -q | grep -q .; then \
-		docker-compose -f infra/prod/docker-compose.yml logs -f; \
+	@if [ -f infra/dev/docker-compose.yml ] && docker compose -f infra/dev/docker-compose.yml ps -q | grep -q .; then \
+		docker compose -f infra/dev/docker-compose.yml logs -f; \
+	elif [ -f infra/prod/docker-compose.yml ] && docker compose -f infra/prod/docker-compose.yml ps -q | grep -q .; then \
+		docker compose -f infra/prod/docker-compose.yml logs -f; \
 	else \
 		echo "\033[33m🤔 No running containers found. Start with 'make dev' or 'make prod'.\033[0m"; \
 	fi
@@ -294,8 +294,8 @@ nuke:
 	@read -p "Type 'DELETE EVERYTHING' to confirm: " confirm; \
 	if [ "$$confirm" = "DELETE EVERYTHING" ]; then \
 		echo "Nuking everything..."; \
-		docker-compose -f infra/dev/docker-compose.yml down -v 2>/dev/null || true; \
-		docker-compose -f infra/prod/docker-compose.yml down -v 2>/dev/null || true; \
+		docker compose -f infra/dev/docker-compose.yml down -v 2>/dev/null || true; \
+		docker compose -f infra/prod/docker-compose.yml down -v 2>/dev/null || true; \
 		docker system prune -a -v -f; \
 		echo "\033[32m🔥 Everything has been deleted.\033[0m"; \
 	else \
@@ -315,14 +315,14 @@ setup:
 migrate-dev:
 	$(call ASCII_MIGRATE)
 	@echo "\033[94mApplying DEV database migrations...\033[0m"
-	@docker-compose -f infra/dev/docker-compose.yml exec backend alembic upgrade head
+	@docker compose -f infra/dev/docker-compose.yml exec backend alembic upgrade head
 	@echo "\033[32m DEV migrations applied.\033[0m"
 	$(call ASCII_MIGRATE)
 
 migrate-prod:
 	$(call ASCII_MIGRATE)
 	@echo "\033[94mApplying PROD database migrations...\033[0m"
-	@docker-compose -f infra/prod/docker-compose.yml exec backend alembic upgrade head
+	@docker compose -f infra/prod/docker-compose.yml exec backend alembic upgrade head
 	@echo "\033[32m PROD migrations applied.\033[0m"
 	$(call ASCII_MIGRATE)
 
@@ -330,7 +330,7 @@ migration:
 	$(call ASCII_MIGRATE)
 	@read -p "Enter migration message: " msg; \
 	echo "\033[94mCreating new migration: '$$msg'...\033[0m"; \
-	docker-compose -f infra/dev/docker-compose.yml exec backend alembic revision --autogenerate -m "$$msg"
+	docker compose -f infra/dev/docker-compose.yml exec backend alembic revision --autogenerate -m "$$msg"
 	$(call ASCII_MIGRATE)
 
 # --- Code quality ---

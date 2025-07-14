@@ -5,7 +5,6 @@ import {
   PhotoIcon,
   HomeIcon,
   ArrowUpOnSquareIcon,
-  MagnifyingGlassIcon,
   ChevronDownIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -25,9 +24,8 @@ function Layout() {
   }
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+    { path: '/dashboard', label: 'Gallery', icon: HomeIcon },
     { path: '/upload', label: 'Upload', icon: ArrowUpOnSquareIcon },
-    { path: '/search', label: 'Search', icon: MagnifyingGlassIcon },
   ]
 
   return (

@@ -7,7 +7,6 @@ import Login from '@/pages/Login/Login'
 import Register from '@/pages/Register/Register'
 import Dashboard from '@/pages/Dashboard/Dashboard'
 import Upload from '@/pages/Upload/Upload'
-import Search from '@/pages/Search/Search'
 import NotFound from '@/pages/NotFound/NotFound'
 import './App.css'
 
@@ -18,9 +17,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoadingUser) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
+      <div className="pgv-loading-container">
+        <div className="pgv-loading-spinner"></div>
+        <p className="pgv-loading-text">Loading...</p>
       </div>
     )
   }
@@ -88,7 +87,6 @@ function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<Upload />} />
-          <Route path="/search" element={<Search />} />
         </Route>
 
         {/* 404 */}

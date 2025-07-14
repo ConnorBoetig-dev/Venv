@@ -8,12 +8,15 @@ Supports both images and videos with AI-generated summaries and embeddings.
 """
 
 import json
+import logging
 from enum import Enum
 from typing import Any, Literal
 from uuid import UUID
 
 import database
 from models import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessingStatus(str, Enum):
@@ -76,7 +79,21 @@ class Upload(BaseModel):
             "processing_status", ProcessingStatus.PENDING
         )
         self.gemini_summary: str | None = kwargs.get("gemini_summary")
-        self.embedding: list[float] | None = kwargs.get("embedding")
+        
+        # Handle embedding - could be string from database or list from API
+        embedding_raw = kwargs.get("embedding")
+        if isinstance(embedding_raw, str):
+            # Parse string format from database: "[0.1,0.2,0.3]"
+            try:
+                if embedding_raw.startswith('[') and embedding_raw.endswith(']'):
+                    self.embedding = list(map(float, embedding_raw[1:-1].split(',')))
+                else:
+                    self.embedding = None
+            except (ValueError, AttributeError):
+                self.embedding = None
+        else:
+            self.embedding = embedding_raw
+            
         self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
         self.error_message: str | None = kwargs.get("error_message")
 
@@ -436,10 +453,17 @@ class Upload(BaseModel):
         if self.id is None:
             raise ValueError("Cannot update analysis for unsaved upload")
 
+        # Convert embedding list to PostgreSQL vector string format
+        embedding_str = None
+        if embedding and isinstance(embedding, list):
+            # Format each float without locale-specific formatting
+            float_strings = [f"{float(x):.10g}" for x in embedding]
+            embedding_str = f"[{','.join(float_strings)}]"
+
         query = """
             UPDATE uploads
             SET gemini_summary = $1,
-                embedding = $2,
+                embedding = $2::vector,
                 processing_status = $3,
                 updated_at = NOW()
             WHERE id = $4
@@ -447,7 +471,7 @@ class Upload(BaseModel):
         """
 
         updated_at = await database.db.fetchval(
-            query, gemini_summary, embedding, ProcessingStatus.COMPLETED, self.id
+            query, gemini_summary, embedding_str, ProcessingStatus.COMPLETED, self.id
         )
 
         if updated_at:

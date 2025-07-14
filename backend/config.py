@@ -62,9 +62,6 @@ class Settings(BaseSettings):
     secret_key: str = Field(
         default="dev-secret-key", description="Secret key for JWT signing (dev)"
     )
-    access_token_expire_minutes: int = Field(
-        default=30, gt=0, description="JWT token expiration time in minutes"
-    )
     algorithm: str = Field(default="HS256", description="JWT signing algorithm")
 
     # AI Services

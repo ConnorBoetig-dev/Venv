@@ -27,7 +27,7 @@ class PaginationParams(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
     )
 
@@ -57,7 +57,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
     )
 
     items: list[T] = Field(description="List of items for current page")
@@ -95,7 +95,7 @@ class ErrorResponse(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
     )
 
     detail: str = Field(description="Error message")

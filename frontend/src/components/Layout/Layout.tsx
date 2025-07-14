@@ -34,7 +34,7 @@ function Layout() {
         <div className="nav-container">
           {/* Logo with Glass Effect */}
           <div className="nav-brand">
-            <NavLink to="/dashboard" className="brand-link pgv-liquid-hover">
+            <NavLink to="/dashboard" className="brand-link">
               <PhotoIcon className="brand-icon w-8 h-8 text-white" />
               <span className="brand-text font-display font-bold tracking-tighter text-lg">VueMantic</span>
             </NavLink>
@@ -47,7 +47,7 @@ function Layout() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `nav-link pgv-glass transition-all duration-300 hover:scale-105 ${isActive ? 'nav-link-active border-accent-primary' : 'hover:bg-white/10'}`
+                  `nav-link pgv-glass transition-all duration-300 ${isActive ? 'nav-link-active border-accent-primary' : ''}`
                 }
               >
                 <item.icon className="nav-icon w-5 h-5" />
@@ -59,7 +59,7 @@ function Layout() {
           {/* User Menu with Glass Effect */}
           <div className="nav-user">
             <button
-              className="user-menu-button pgv-glass hover:scale-105 transition-all duration-300 pgv-glow-on-hover"
+              className="user-menu-button pgv-glass transition-all duration-300"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               aria-label="User menu"
             >

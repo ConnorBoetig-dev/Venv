@@ -21,8 +21,8 @@ from models import User
 
 # Token configuration
 ALGORITHM: Final[str] = settings.algorithm
-ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = settings.access_token_expire_minutes
-REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 30
+ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = 30  # 30 minutes
+REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 30    # 30 days
 
 # OAuth2 scheme for token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")

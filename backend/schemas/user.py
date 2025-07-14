@@ -36,7 +36,7 @@ class UserCreate(UserBase):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
         json_schema_extra={
             "example": {"email": "newuser@example.com", "password": "MyStr0ng!Pass123"}
@@ -86,7 +86,7 @@ class UserResponse(UserBase, TimestampMixin):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         from_attributes=True,  # Allow creation from ORM models
         json_schema_extra={
             "example": {
@@ -109,7 +109,7 @@ class UserUpdate(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
     )
 
@@ -125,7 +125,7 @@ class PasswordChangeRequest(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
         str_strip_whitespace=True,
         json_schema_extra={
             "example": {
@@ -171,7 +171,7 @@ class UserStats(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="ignore",  # Allow extra fields for MVP
     )
 
     total_uploads: int = Field(ge=0, description="Total number of uploads")

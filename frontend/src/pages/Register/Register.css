@@ -1,5 +1,5 @@
 /* Import shared auth styles from Login.css */
-@import './Login.css';
+@import '../Login/Login.css';
 
 /* Additional styles specific to Register page */
 

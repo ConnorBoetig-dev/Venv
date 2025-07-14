@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import './css/Layout.css'
+import './Layout.css'
 
 function Layout() {
   const { user, logout } = useAuth()

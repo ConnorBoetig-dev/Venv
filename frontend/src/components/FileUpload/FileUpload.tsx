@@ -232,7 +232,7 @@ function FileUpload() {
               <CloudArrowUpIcon className="w-16 h-16 mx-auto text-gray-400" />
             )}
           </div>
-          <h3 className="drop-zone-title text-2xl font-semibold text-white">
+          <h3 className="drop-zone-title text-2xl font-display font-semibold text-white tracking-tight">
             {isDragging ? 'Drop files here' : 'Drag & drop files here'}
           </h3>
           <p className="drop-zone-subtitle text-gray-300">
@@ -248,7 +248,7 @@ function FileUpload() {
       {files.length > 0 && (
         <div className="file-list pgv-glass p-6 rounded-2xl">
           <div className="file-list-header flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-white">Upload Queue ({counts.total})</h3>
+            <h3 className="text-xl font-display font-semibold text-white tracking-tight">Upload Queue ({counts.total})</h3>
             {counts.success > 0 && (
               <button 
                 className="clear-button pgv-button-glass px-4 py-2 rounded-lg text-sm hover:scale-105 transition-all duration-200" 

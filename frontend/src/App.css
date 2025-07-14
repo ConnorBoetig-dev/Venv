@@ -20,13 +20,13 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 
-    'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+  font-family: var(--pgv-font-body);
   line-height: 1.6;
   color: var(--pgv-text-primary);
   background-color: var(--pgv-base-black);
   overflow-x: hidden;
   position: relative;
+  font-feature-settings: 'kern', 'liga', 'clig', 'calt';
 }
 
 /* === DARK LIQUID GLASS VARIABLES === */
@@ -36,6 +36,11 @@ body {
   --pgv-accent-primary: #000000;        /* Pure black for highlights and focus states */
   --pgv-accent-primary-light: #1a1a1a;  /* Lighter variant for hovers */
   --pgv-accent-primary-glow: rgba(0, 0, 0, 0.6); /* Glow effect */
+  
+  /* Typography */
+  --pgv-font-display: 'Azonix', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --pgv-font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --pgv-font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   
   /* Glass Elements */
   --pgv-glass-overlay: rgba(0, 0, 0, 0.3);            /* Darker semi-transparent panels */
@@ -111,17 +116,55 @@ body {
 
 /* === TYPOGRAPHY === */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
+  font-family: var(--pgv-font-display);
+  font-weight: 700;
+  line-height: 1.1;
   color: var(--pgv-text-primary);
+  letter-spacing: -0.02em;
+  text-rendering: optimizeLegibility;
 }
 
-h1 { font-size: 2.5rem; letter-spacing: -0.02em; }
-h2 { font-size: 2rem; letter-spacing: -0.01em; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
-h5 { font-size: 1rem; }
-h6 { font-size: 0.875rem; }
+h1 { 
+  font-size: 3rem; 
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+h2 { 
+  font-size: 2.25rem; 
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h3 { 
+  font-size: 1.75rem; 
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h4 { 
+  font-size: 1.375rem; 
+  font-weight: 600;
+  font-family: var(--pgv-font-body); /* Switch to body font for h4+ */
+}
+h5 { 
+  font-size: 1.125rem; 
+  font-weight: 600;
+  font-family: var(--pgv-font-body);
+}
+h6 { 
+  font-size: 1rem; 
+  font-weight: 600;
+  font-family: var(--pgv-font-body);
+}
+
+/* Body Typography */
+p, span, div, label, input, button {
+  font-family: var(--pgv-font-body);
+}
+
+/* Code Typography */
+code, pre, .font-mono {
+  font-family: var(--pgv-font-mono);
+}
 
 /* === GLOBAL ANIMATIONS === */
 @keyframes pgv-fade-in {

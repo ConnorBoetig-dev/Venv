@@ -108,12 +108,12 @@ function Register() {
           {/* Logo */}
           <div className="text-center">
             <PhotoIcon className="w-12 h-12 mx-auto text-white mb-4" />
-            <h1 className="text-2xl font-bold text-white">PG-VENV</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-tighter">PG-VENV</h1>
           </div>
 
           {/* Title */}
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-white mb-2">Create an account</h2>
+            <h2 className="text-xl font-display font-semibold text-white mb-2 tracking-tight">Create an account</h2>
           </div>
 
           {/* Error message */}

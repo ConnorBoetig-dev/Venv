@@ -46,7 +46,7 @@ function Upload() {
         {/* Recent Uploads Section with Masonry Layout */}
         {uploads && uploads.items.length > 0 && (
           <div className="recent-uploads pgv-glass p-8 rounded-2xl">
-            <h2 className="text-2xl font-semibold mb-6 text-white">Recent Uploads</h2>
+            <h2 className="text-2xl font-display font-semibold mb-6 text-white tracking-tight">Recent Uploads</h2>
             <div className="recent-uploads-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {uploads.items.slice(0, 5).map((upload) => (
                 <div key={upload.id} className="recent-upload-item pgv-glass p-4 rounded-xl hover:scale-105 transition-all duration-300 pgv-glow-on-hover">
@@ -87,7 +87,7 @@ function Upload() {
 
         {/* Tips Section with Glass Cards */}
         <div className="upload-tips pgv-glass p-8 rounded-2xl">
-          <h3 className="text-2xl font-semibold mb-6 text-white flex items-center gap-3">
+          <h3 className="text-2xl font-display font-semibold mb-6 text-white flex items-center gap-3 tracking-tight">
             <BoltIcon className="w-8 h-8 text-yellow-400" />
             Tips for best results
           </h3>

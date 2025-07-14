@@ -1,3 +1,4 @@
+@import './assets/fonts.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -47,6 +48,19 @@
   
   .border-accent-primary {
     border-color: var(--pgv-accent-primary);
+  }
+  
+  /* Typography utilities */
+  .font-display {
+    font-family: var(--pgv-font-display);
+  }
+  
+  .font-body {
+    font-family: var(--pgv-font-body);
+  }
+  
+  .font-mono {
+    font-family: var(--pgv-font-mono);
   }
 }
 

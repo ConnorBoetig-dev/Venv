@@ -70,8 +70,7 @@ class UploadResponse(TimestampMixin):
         max_length=1536,
     )
     has_embedding: bool = Field(
-        default=False,
-        description="Whether this upload has an embedding generated"
+        default=False, description="Whether this upload has an embedding generated"
     )
     thumbnail_path: str | None = Field(
         default=None, description="Path to generated thumbnail"

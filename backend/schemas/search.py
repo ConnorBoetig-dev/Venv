@@ -53,7 +53,7 @@ class SearchRequest(BaseModel):
     )
 
     similarity_threshold: float = Field(
-        default=0.0, ge=0.0, le=1.0, description="Minimum similarity score (0-1)"
+        default=0.25, ge=0.0, le=1.0, description="Minimum similarity score (0-1)"
     )
 
     file_types: list[Literal["image", "video"]] | None = Field(

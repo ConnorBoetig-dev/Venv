@@ -79,21 +79,21 @@ class Upload(BaseModel):
             "processing_status", ProcessingStatus.PENDING
         )
         self.gemini_summary: str | None = kwargs.get("gemini_summary")
-        
+
         # Handle embedding - could be string from database or list from API
         embedding_raw = kwargs.get("embedding")
         if isinstance(embedding_raw, str):
             # Parse string format from database: "[0.1,0.2,0.3]"
             try:
-                if embedding_raw.startswith('[') and embedding_raw.endswith(']'):
-                    self.embedding = list(map(float, embedding_raw[1:-1].split(',')))
+                if embedding_raw.startswith("[") and embedding_raw.endswith("]"):
+                    self.embedding = list(map(float, embedding_raw[1:-1].split(",")))
                 else:
                     self.embedding = None
             except (ValueError, AttributeError):
                 self.embedding = None
         else:
             self.embedding = embedding_raw
-            
+
         self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
         self.error_message: str | None = kwargs.get("error_message")
 
@@ -347,7 +347,7 @@ class Upload(BaseModel):
                 gemini_summary, embedding, thumbnail_path,
                 error_message, metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::vector, $10, $11, $12)
             RETURNING *
         """
 
@@ -383,7 +383,7 @@ class Upload(BaseModel):
                 mime_type = $5,
                 processing_status = $6,
                 gemini_summary = $7,
-                embedding = $8,
+                embedding = $8::vector,
                 thumbnail_path = $9,
                 error_message = $10,
                 metadata = $11,
@@ -453,12 +453,8 @@ class Upload(BaseModel):
         if self.id is None:
             raise ValueError("Cannot update analysis for unsaved upload")
 
-        # Convert embedding list to PostgreSQL vector string format
-        embedding_str = None
-        if embedding and isinstance(embedding, list):
-            # Format each float without locale-specific formatting
-            float_strings = [f"{float(x):.10g}" for x in embedding]
-            embedding_str = f"[{','.join(float_strings)}]"
+        # Pass the embedding list directly to PostgreSQL
+        logger.info(f"DEBUG: Passing embedding directly as list, length: {len(embedding) if embedding else 'None'}")
 
         query = """
             UPDATE uploads
@@ -471,7 +467,7 @@ class Upload(BaseModel):
         """
 
         updated_at = await database.db.fetchval(
-            query, gemini_summary, embedding_str, ProcessingStatus.COMPLETED, self.id
+            query, gemini_summary, embedding, ProcessingStatus.COMPLETED, self.id
         )
 
         if updated_at:

@@ -25,7 +25,11 @@ function Upload() {
   
   // Toast notifications for failed uploads
   const [toasts, setToasts] = useState<Array<{id: string, message: string, type: 'error' | 'success'}>>([])
-  const [failedUploads, setFailedUploads] = useState<Set<string>>(new Set())
+  const [failedUploads, setFailedUploads] = useState<Set<string>>(() => {
+    // Load from localStorage on init
+    const saved = localStorage.getItem('failedUploads')
+    return saved ? new Set(JSON.parse(saved)) : new Set()
+  })
 
   // Auto-refresh uploads list when there are processing uploads
   useEffect(() => {
@@ -55,7 +59,11 @@ function Upload() {
       }, 5000)
       
       // Mark as failed and hide after 10 seconds
-      setFailedUploads(prev => new Set(prev).add(upload.id))
+      setFailedUploads(prev => {
+        const newSet = new Set(prev).add(upload.id)
+        localStorage.setItem('failedUploads', JSON.stringify([...newSet]))
+        return newSet
+      })
       setTimeout(() => {
         setHiddenUploads(prev => new Set(prev).add(upload.id))
       }, 10000)
@@ -92,6 +100,12 @@ function Upload() {
   const clearAllHidden = () => {
     setHiddenUploads(new Set())
     localStorage.removeItem('hiddenUploads')
+  }
+
+  // Clear failed uploads tracking (useful for debugging)
+  const clearAllFailed = () => {
+    setFailedUploads(new Set())
+    localStorage.removeItem('failedUploads')
   }
 
   // Hide all visible uploads

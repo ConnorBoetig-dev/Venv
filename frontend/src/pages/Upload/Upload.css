@@ -1,0 +1,11 @@
+/* frontend/src/pages/Upload/Upload.css */
+.upload-page {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.upload-page h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}

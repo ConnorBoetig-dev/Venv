@@ -1,0 +1,12 @@
+/* frontend/src/pages/Search/Search.css */
+.search-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-page h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+

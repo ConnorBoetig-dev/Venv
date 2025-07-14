@@ -79,7 +79,7 @@ class Upload(BaseModel):
         self.embedding: list[float] | None = kwargs.get("embedding")
         self.thumbnail_path: str | None = kwargs.get("thumbnail_path")
         self.error_message: str | None = kwargs.get("error_message")
-        
+
         # Handle metadata - could be dict or JSON string from database
         metadata = kwargs.get("metadata")
         if isinstance(metadata, str):
@@ -165,25 +165,45 @@ class Upload(BaseModel):
         """
         await cls.ensure_table_exists()
 
-        query = """
-            INSERT INTO uploads (
-                user_id, filename, file_path, file_type,
-                file_size, mime_type, metadata
+        if upload_id:
+            query = """
+                INSERT INTO uploads (
+                    id, user_id, filename, file_path, file_type,
+                    file_size, mime_type, metadata
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING *
+            """
+            record = await database.db.fetchrow(
+                query,
+                upload_id,
+                user_id,
+                filename,
+                file_path,
+                file_type,
+                file_size,
+                mime_type,
+                json.dumps(metadata) if metadata is not None else None,
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *
-        """
-
-        record = await database.db.fetchrow(
-            query,
-            user_id,
-            filename,
-            file_path,
-            file_type,
-            file_size,
-            mime_type,
-            json.dumps(metadata) if metadata is not None else None,
-        )
+        else:
+            query = """
+                INSERT INTO uploads (
+                    user_id, filename, file_path, file_type,
+                    file_size, mime_type, metadata
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *
+            """
+            record = await database.db.fetchrow(
+                query,
+                user_id,
+                filename,
+                file_path,
+                file_type,
+                file_size,
+                mime_type,
+                json.dumps(metadata) if metadata is not None else None,
+            )
 
         return cls.from_record(record)
 

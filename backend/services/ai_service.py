@@ -128,12 +128,14 @@ class AIService:
             await upload.update_status(ProcessingStatus.EMBEDDING)
 
             # Generate embedding from description
+            logger.info(f"Starting embedding generation for {upload_id}")
             embedding = await self._generate_embedding(description)
             logger.info(
                 f"Generated embedding for {upload_id}: {len(embedding)} dimensions"
             )
 
             # Update upload with results
+            logger.info(f"Updating database with analysis results for {upload_id}")
             await upload.update_analysis(
                 gemini_summary=description, embedding=embedding
             )
@@ -276,13 +278,12 @@ Describe it as a cohesive video, not individual frames. Be specific and use natu
 
             # Use asyncio to run in executor since SDK might not be fully async
             loop = asyncio.get_event_loop()
-            
+
             def call_gemini():
                 return self._ensure_gemini_client().models.generate_content(
-                    model=self._gemini_model,
-                    contents=contents
+                    model=self._gemini_model, contents=contents
                 )
-            
+
             response = await loop.run_in_executor(None, call_gemini)
 
             if not response.text:

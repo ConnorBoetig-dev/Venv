@@ -1,3 +1,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Override Tailwind defaults with our Dark Liquid Glass design */
+@layer base {
+  /* Ensure our color scheme takes precedence */
+  body {
+    @apply antialiased;
+  }
+  
+  /* Reset any Tailwind button styles that might conflict */
+  button {
+    @apply focus:outline-none;
+  }
+}
+
+/* Custom utility classes that extend Tailwind */
+@layer utilities {
+  /* Glass morphism utilities */
+  .glass {
+    background: var(--pgv-glass-overlay);
+    backdrop-filter: blur(var(--pgv-glass-blur));
+    -webkit-backdrop-filter: blur(var(--pgv-glass-blur));
+    border: 1px solid var(--pgv-glass-border);
+  }
+  
+  .glass-heavy {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(var(--pgv-glass-blur-heavy));
+    -webkit-backdrop-filter: blur(var(--pgv-glass-blur-heavy));
+  }
+  
+  /* Text glow effect */
+  .text-glow {
+    text-shadow: 0 0 20px var(--pgv-accent-turquoise-glow);
+  }
+  
+  /* Turquoise accent utilities */
+  .accent-turquoise {
+    color: var(--pgv-accent-turquoise);
+  }
+  
+  .bg-accent-turquoise {
+    background-color: var(--pgv-accent-turquoise);
+  }
+  
+  .border-accent-turquoise {
+    border-color: var(--pgv-accent-turquoise);
+  }
+}
+
+/* Ensure proper stacking context */
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}

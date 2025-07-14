@@ -170,6 +170,7 @@ async def upload_file(
                 "original_filename": file.filename,
                 "upload_source": "web",
             },
+            upload_id=upload_id,
         )
 
         # Queue background processing (fire and forget)
